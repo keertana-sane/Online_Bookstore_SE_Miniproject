@@ -1,0 +1,49 @@
+ID,Story,Epic,SRS requirement,Assignee,Story points,Sprint,Acceptance criteria
+BK-01,"Project scaffold: React (Vite) + Express + Mongoose, ESLint, .env.example, module folders",DevOps,NFR-005,Bhuvan Raj H,3,1,App boots locally; folders follow SAD 4.1 (routes/controllers -> services -> repositories); no secrets committed
+BK-02,GitHub Actions CI: lint + tests on every PR,DevOps,NFR-005,Bhuvan Raj H,3,1,Workflow runs on pull_request; failing lint/test blocks merge
+BK-03,"Seed script: 1,000 books, 3 customers, 1 admin",DevOps,STP 6,Anushka P,3,1,"One command seeds the DB; books span Fiction, Non-fiction, Academic"
+BK-04,Register API with unique email and bcrypt password hash,Auth & Security,"FR-001, SEC-001",Bhagath Naveen Mullakara,5,1,201 on success; 409 EMAIL_EXISTS; stored hash is 60-char bcrypt; 8-char min password
+BK-05,"Login API issuing JWT (role claim, 1 h expiry)",Auth & Security,FR-002,Bhagath Naveen Mullakara,3,1,200 with token/role/expiresIn; 401 generic message on bad credentials
+BK-06,Register / Login UI,Auth & Security,"FR-001, FR-002",Bhagath Naveen Mullakara,3,1,"Customer can register, log in, log out; token kept in session storage"
+BK-07,JWT verification middleware,Auth & Security,SEC-004,Bhagath Naveen Mullakara,3,1,Missing/expired/tampered token returns 401 on protected routes
+BK-08,RBAC middleware for /admin routes,Auth & Security,SEC-002,Bhagath Naveen Mullakara,2,1,Customer token gets 403 on every /admin endpoint
+BK-09,Sprint 1 demo video (1 min) uploaded to repo,Docs & Demo,Deliverable 2,Bhagath Naveen Mullakara,1,1,Video shows working product; file committed to repo
+BK-10,"Browse catalog API (public, paginated, limit <= 50)",Catalog & Search,FR-003,Anushka P,3,1,GET /books works without login; limit 51 rejected or capped
+BK-11,"Search by title, author or category",Catalog & Search,FR-004,Anushka P,5,1,Matching books only; no-match returns empty list; injection payloads treated as text
+BK-12,Book detail API and page,Catalog & Search,FR-005,Anushka P,3,1,"Shows title, author, category, price, stock status, description, cover; 404 for unknown/disabled"
+BK-13,"Catalog UI: home, search results, book cards, out-of-stock label",Catalog & Search,"FR-003, FR-005",Anushka P,5,1,Responsive; Add to cart disabled when stock = 0
+BK-14,Add in-stock book to cart (login required),Cart & Checkout,FR-006,B S Keertana,3,1,Out-of-stock gives 409; unauthenticated gives 401
+BK-15,Update quantity / remove cart item,Cart & Checkout,FR-007,B S Keertana,2,1,Qty 0/-1 gives 422; qty above stock gives 409
+BK-16,Cart total calculation (price x quantity),Cart & Checkout,FR-008,B S Keertana,2,1,Example 2x499.00 + 1x250.50 = 1248.50; empty cart = 0.00
+BK-17,Cart UI,Cart & Checkout,"FR-006, FR-007, FR-008",B S Keertana,3,1,"Edit qty, remove items, see total"
+BK-18,Payment adapter + mock payment service (SUCCESS / DECLINED / TIMEOUT),Cart & Checkout,"FR-016, NFR-006",B S Keertana,3,1,Adapter interface stubbed in tests; no card data anywhere
+BK-19,"Checkout API: validation, unique order number, stock reservation",Cart & Checkout,"FR-009, FR-010",B S Keertana,5,1,Empty cart/missing address rejected; address <= 300 chars; order number unique; decline creates no confirmed order
+BK-20,Admin: add / edit / disable books API,Admin,FR-013,Bhuvan Raj H,5,1,Admin only; invalid data gives 422; disabled books hidden from customers
+BK-21,Admin: update stock quantity API,Admin,FR-014,Bhuvan Raj H,2,1,Stock >= 0; negative gives 422
+BK-22,Admin catalog management UI,Admin,"FR-013, FR-014",Bhuvan Raj H,5,1,"Add, edit, disable, stock update from dashboard"
+BK-23,"Input validation and sanitisation (express-validator, mongo-sanitize, length limits)",Auth & Security,SEC-003,Bhagath Naveen Mullakara,5,2,Operator injection and script payloads neutralised; limits per SRS Appendix B
+BK-24,"Central error envelope, helmet headers, request logging",Auth & Security,"SEC-003, SEC-006",Bhagath Naveen Mullakara,3,2,All errors use standard envelope; no stack traces to clients
+BK-25,Security event logging and login rate limit,Auth & Security,SEC-006,Bhagath Naveen Mullakara,3,2,Failed login/unauthorised access logged; 11th login in 15 min gives 429
+BK-26,Verify no payment card data stored (schema/log review),Auth & Security,SEC-005,Bhagath Naveen Mullakara,1,2,Only paymentStatus and paymentRef persisted
+BK-27,"Auth and security tests (TC-AUTH, TC-SEC)",Testing,SEC-001..006,Bhagath Naveen Mullakara,3,2,Tests run in CI and pass
+BK-28,Update SRS/SAD/RTM for Auth module; document deviations,Docs & Demo,Deliverable 2,Bhagath Naveen Mullakara,2,2,Deviations written down for final demo
+BK-29,Search performance: indexes + JMeter plan (50 users),Catalog & Search,NFR-001,Anushka P,5,2,"p95 <= 1.5 s, error rate < 1%"
+BK-30,Catalog tests (TC-CAT),Testing,FR-003..005,Anushka P,3,2,Tests run in CI and pass
+BK-31,Postman collection run in CI,Testing,SAD 3.7,Anushka P,3,2,Collection covers main endpoints; Newman step in workflow
+BK-32,Health endpoint (/health) and uptime check,DevOps,NFR-002,Anushka P,2,2,"GET /health returns 200, 503 when DB is down; uptime log kept"
+BK-33,Usability walkthrough: order in <= 5 screens,Testing,NFR-003,Anushka P,2,2,Results recorded for test users
+BK-34,Update docs for Catalog module; document deviations,Docs & Demo,Deliverable 2,Anushka P,2,2,Deviations written down for final demo
+BK-35,Sprint 2 demo video (2 min) uploaded to repo,Docs & Demo,Deliverable 2,Anushka P,1,2,Working product; file committed to repo
+BK-36,Idempotency-Key on POST /orders (retry-safe),Cart & Checkout,NFR-004,B S Keertana,5,2,Retry after timeout yields exactly one order; replay returns 200
+BK-37,Order history and order detail (own orders only),Cart & Checkout,FR-012,B S Keertana,3,2,Other customer's order gives 404; empty history handled
+BK-38,Customer cancels own PLACED order (stock restored),Cart & Checkout,SRS 6.5,B S Keertana,2,2,Cancel after PROCESSING gives 409
+BK-39,"Checkout, confirmation and order history UI",Cart & Checkout,"FR-009, FR-012, NFR-003",B S Keertana,5,2,Basic purchase within 5 primary screens
+BK-40,"Cart and order tests (TC-CART, TC-ORD, TC-TRK, TC-TST)",Testing,"FR-006..012, NFR-004",B S Keertana,3,2,Tests run in CI and pass
+BK-41,Update docs for Cart & Checkout; document deviations,Docs & Demo,Deliverable 2,B S Keertana,2,2,Deviations written down for final demo
+BK-42,Order status state machine (PLACED..CANCELLED),Admin,FR-011,Bhuvan Raj H,3,2,Invalid transition gives 409; statusHistory records actor/time
+BK-43,Admin order list and status update API,Admin,FR-015,Bhuvan Raj H,5,2,Filter by status; customer sees staff-set status
+BK-44,Admin order management UI,Admin,FR-015,Bhuvan Raj H,3,2,Incoming orders and status update from dashboard
+BK-45,Dockerfile + docker-compose,DevOps,STP 6,Bhuvan Raj H,3,2,App and DB start with one command
+BK-46,Static analysis and npm audit in CI,DevOps,SAD 3.9,Bhagath Naveen Mullakara,2,2,Scan step in workflow
+BK-47,Admin tests (TC-ADM) and development freeze,Testing,FR-013..015,Bhuvan Raj H,3,2,Tests pass; main frozen at end of Sprint 2
+BK-48,Update docs for Admin module; document deviations,Docs & Demo,Deliverable 2,Bhuvan Raj H,2,2,Deviations written down for final demo

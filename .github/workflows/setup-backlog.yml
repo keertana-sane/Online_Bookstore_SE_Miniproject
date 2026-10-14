@@ -1,0 +1,13 @@
+name: Setup backlog (run once)
+on: workflow_dispatch
+permissions:
+  issues: write
+  contents: read
+jobs:
+  create:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: .github/scripts/create_issues.sh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
