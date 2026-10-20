@@ -1,3 +1,4 @@
+
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema(
@@ -20,9 +21,9 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['customer', 'admin'],
+      enum: ['CUSTOMER', 'ADMIN_STAFF'],
       required: true,
-      default: 'customer'
+      default: 'CUSTOMER'
     },
     shipping_address: {
       type: String,
