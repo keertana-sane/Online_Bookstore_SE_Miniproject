@@ -5,8 +5,9 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
+// Middleware
 app.use(cors());
 app.use(express.json());
 
@@ -54,15 +55,19 @@ const Book = mongoose.model("Book", bookSchema);
 
 // 2. Home route
 app.get("/", (req, res) => {
-  res.json({ message: "Online Bookstore API is running!" });
+  res.json({
+    message: "Online Bookstore API is running!",
+  });
 });
 
 // 3. Health-check route
 app.get("/api/health", (req, res) => {
-  res.json({
-    status: mongoose.connection.readyState === 1 ? "OK" : "Disconnected",
+  const connected = mongoose.connection.readyState === 1;
+
+  res.status(connected ? 200 : 503).json({
+    status: connected ? "OK" : "Disconnected",
     application: "Online Bookstore",
-    database: mongoose.connection.readyState === 1 ? "Connected" : "Disconnected",
+    database: connected ? "Connected" : "Disconnected",
   });
 });
 
@@ -73,7 +78,10 @@ app.get("/api/books", async (req, res) => {
     res.json(books);
   } catch (error) {
     console.error("Error fetching books:", error.message);
-    res.status(500).json({ message: "Failed to fetch books." });
+
+    res.status(500).json({
+      message: "Failed to fetch books.",
+    });
   }
 });
 
@@ -91,31 +99,40 @@ app.post("/api/books", async (req, res) => {
       !category.trim() ||
       typeof price !== "number" ||
       !Number.isFinite(price) ||
-      price <= 0 ||
+      price < 0.01 ||
       !Number.isInteger(stock) ||
       stock < 0
     ) {
       return res.status(400).json({
         message:
-          "Enter a valid title, author, category, positive price, and non-negative whole-number stock.",
+          "Enter a valid title, author, category, price of at least 0.01, and non-negative whole-number stock.",
       });
     }
 
     const book = await Book.create({
-      title,
-      author,
+      title: title.trim(),
+      author: author.trim(),
       price,
-      category,
+      category: category.trim(),
       stock,
     });
 
-    res.status(201).json({
-      message: "Book added successfully",
+    return res.status(201).json({
+      message: "Book added successfully.",
       book,
     });
   } catch (error) {
     console.error("Error adding book:", error.message);
-    res.status(500).json({ message: "Failed to add book." });
+
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        message: "Book data failed validation.",
+      });
+    }
+
+    return res.status(500).json({
+      message: "Failed to add book.",
+    });
   }
 });
 
@@ -133,10 +150,11 @@ app.put("/api/books/:id", async (req, res) => {
       !category.trim() ||
       typeof price !== "number" ||
       !Number.isFinite(price) ||
-      price <= 0
+      price < 0.01
     ) {
       return res.status(400).json({
-        message: "Enter a valid title, author, category, and positive price.",
+        message:
+          "Enter a valid title, author, category, and price of at least 0.01.",
       });
     }
 
@@ -148,21 +166,38 @@ app.put("/api/books/:id", async (req, res) => {
         price,
         category: category.trim(),
       },
-      { new: true, runValidators: true }
+      {
+        new: true,
+        runValidators: true,
+      }
     );
 
     if (!book) {
-      return res.status(404).json({ message: "Book not found." });
+      return res.status(404).json({
+        message: "Book not found.",
+      });
     }
 
-    res.json({ message: "Book updated successfully", book });
+    return res.json({
+      message: "Book updated successfully.",
+      book,
+    });
   } catch (error) {
-    if (error.name === "CastError") {
-      return res.status(400).json({ message: "Invalid book ID." });
+    if (
+      error.name === "CastError" ||
+      error.name === "BSONError" ||
+      error.name === "TypeError"
+    ) {
+      return res.status(400).json({
+        message: "Invalid book ID.",
+      });
     }
 
     console.error("Error updating book:", error.message);
-    res.status(500).json({ message: "Failed to update book." });
+
+    return res.status(500).json({
+      message: "Failed to update book.",
+    });
   }
 });
 
@@ -180,21 +215,38 @@ app.patch("/api/books/:id/stock", async (req, res) => {
     const book = await Book.findByIdAndUpdate(
       req.params.id,
       { stock },
-      { new: true, runValidators: true }
+      {
+        new: true,
+        runValidators: true,
+      }
     );
 
     if (!book) {
-      return res.status(404).json({ message: "Book not found." });
+      return res.status(404).json({
+        message: "Book not found.",
+      });
     }
 
-    res.json({ message: "Stock updated successfully", book });
+    return res.json({
+      message: "Stock updated successfully.",
+      book,
+    });
   } catch (error) {
-    if (error.name === "CastError") {
-      return res.status(400).json({ message: "Invalid book ID." });
+    if (
+      error.name === "CastError" ||
+      error.name === "BSONError" ||
+      error.name === "TypeError"
+    ) {
+      return res.status(400).json({
+        message: "Invalid book ID.",
+      });
     }
 
     console.error("Error updating stock:", error.message);
-    res.status(500).json({ message: "Failed to update stock." });
+
+    return res.status(500).json({
+      message: "Failed to update stock.",
+    });
   }
 });
 
@@ -204,21 +256,38 @@ app.patch("/api/books/:id/disable", async (req, res) => {
     const book = await Book.findByIdAndUpdate(
       req.params.id,
       { active: false },
-      { new: true, runValidators: true }
+      {
+        new: true,
+        runValidators: true,
+      }
     );
 
     if (!book) {
-      return res.status(404).json({ message: "Book not found." });
+      return res.status(404).json({
+        message: "Book not found.",
+      });
     }
 
-    res.json({ message: "Book disabled successfully", book });
+    return res.json({
+      message: "Book disabled successfully.",
+      book,
+    });
   } catch (error) {
-    if (error.name === "CastError") {
-      return res.status(400).json({ message: "Invalid book ID." });
+    if (
+      error.name === "CastError" ||
+      error.name === "BSONError" ||
+      error.name === "TypeError"
+    ) {
+      return res.status(400).json({
+        message: "Invalid book ID.",
+      });
     }
 
     console.error("Error disabling book:", error.message);
-    res.status(500).json({ message: "Failed to disable book." });
+
+    return res.status(500).json({
+      message: "Failed to disable book.",
+    });
   }
 });
 
@@ -228,14 +297,19 @@ async function startServer() {
     const mongoUri = process.env.MONGODB_URI;
 
     if (!mongoUri) {
-      throw new Error("MONGODB_URI is missing from the server/.env file.");
+      throw new Error(
+        "MONGODB_URI is missing. Configure it in server/.env."
+      );
     }
 
     await mongoose.connect(mongoUri);
+
     console.log("MongoDB connected successfully.");
 
     app.listen(PORT, () => {
-      console.log(`Online Bookstore API running at http://localhost:${PORT}`);
+      console.log(
+        `Online Bookstore API running at http://localhost:${PORT}`
+      );
     });
   } catch (error) {
     console.error("Server startup failed:", error.message);

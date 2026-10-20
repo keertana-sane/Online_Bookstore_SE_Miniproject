@@ -1,28 +1,34 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import "./App.css";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
+const EMPTY_FORM = {
+  title: "",
+  author: "",
+  price: "",
+  category: "",
+  stock: "",
+};
 
 function App() {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [search, setSearch] = useState("");
-
-  const emptyForm = {
-    title: "",
-    author: "",
-    price: "",
-    category: "",
-    stock: "",
-  };
-
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState(null);
 
+  const titleInputRef = useRef(null);
+
+  // Load books from the backend API.
   const loadBooks = useCallback(async () => {
+    setRefreshing(true);
+
     try {
       setError("");
 
@@ -41,10 +47,11 @@ function App() {
     } catch (err) {
       setError(
         err.message ||
-          "Cannot connect to the bookstore API. Check that your backend is running."
+          "Cannot connect to the bookstore API. Check that the backend is running."
       );
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
@@ -52,6 +59,7 @@ function App() {
     loadBooks();
   }, [loadBooks]);
 
+  // Handle changes in form fields.
   function handleChange(event) {
     const { name, value } = event.target;
 
@@ -61,11 +69,26 @@ function App() {
     }));
   }
 
+  // Reset the form.
   function resetForm() {
-    setForm(emptyForm);
+    setForm({ ...EMPTY_FORM });
     setEditingId(null);
   }
 
+  // Start adding a new book.
+  function handleAddButton() {
+    resetForm();
+    setError("");
+    setMessage("");
+
+    document
+      .getElementById("book-form")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    titleInputRef.current?.focus();
+  }
+
+  // Add a new book or update an existing book.
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -88,26 +111,26 @@ function App() {
       !payload.category ||
       form.price.trim() === "" ||
       !Number.isFinite(payload.price) ||
-      payload.price <= 0 ||
+      payload.price < 0.01 ||
       form.stock.trim() === "" ||
       !Number.isInteger(payload.stock) ||
       payload.stock < 0
     ) {
       setError(
-        "Enter valid details. Price must be positive and stock must be a whole number of zero or more."
+        "Enter valid details. Price must be at least ₹0.01 and stock must be a whole number of zero or more."
       );
       return;
     }
 
     setSaving(true);
 
+    const isEditing = editingId !== null;
+
+    const url = isEditing
+      ? `${API_URL}/books/${editingId}`
+      : `${API_URL}/books`;
+
     try {
-      const isEditing = editingId !== null;
-
-      const url = isEditing
-        ? `${API_URL}/books/${editingId}`
-        : `${API_URL}/books`;
-
       const response = await fetch(url, {
         method: isEditing ? "PUT" : "POST",
         headers: {
@@ -117,6 +140,7 @@ function App() {
       });
 
       const responseText = await response.text();
+
       let result = {};
 
       try {
@@ -135,41 +159,26 @@ function App() {
         );
       }
 
-      // Reload the catalog before clearing the form.
-      const refreshResponse = await fetch(`${API_URL}/books`);
-
-      if (!refreshResponse.ok) {
-        throw new Error(
-          "The save request succeeded, but the catalog could not refresh. Click Refresh to check the saved data."
-        );
-      }
-
-      const refreshedBooks = await refreshResponse.json();
-
-      if (!Array.isArray(refreshedBooks)) {
-        throw new Error(
-          "The save request succeeded, but the server returned an invalid book list."
-        );
-      }
-
-      setBooks(refreshedBooks);
       setMessage(
         isEditing
-          ? "Book updated successfully in the database."
-          : "Book added successfully to the database."
+          ? "Book updated successfully."
+          : "Book added successfully."
       );
 
       resetForm();
+
+      await loadBooks();
     } catch (err) {
       setError(
         err.message ||
-          "Unable to save book. Check that the backend and MongoDB are running."
+          "Unable to save the book. Check that the backend and MongoDB are running."
       );
     } finally {
       setSaving(false);
     }
   }
 
+  // Load a book into the form for editing.
   function startEditing(book) {
     setEditingId(book._id);
 
@@ -184,12 +193,14 @@ function App() {
     setMessage("");
     setError("");
 
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+    document
+      .getElementById("book-form")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    titleInputRef.current?.focus();
   }
 
+  // Update the stock quantity of a book.
   async function updateStock(book) {
     const value = window.prompt(
       `Enter the new stock quantity for "${book.title}":`,
@@ -232,12 +243,14 @@ function App() {
       }
 
       setMessage("Stock updated successfully.");
+
       await loadBooks();
     } catch (err) {
       setError(err.message || "Could not update stock.");
     }
   }
 
+  // Disable a book without deleting it from the database.
   async function disableBook(book) {
     if (!window.confirm(`Disable "${book.title}"?`)) return;
 
@@ -259,20 +272,24 @@ function App() {
       }
 
       setMessage("Book disabled successfully.");
+
       await loadBooks();
     } catch (err) {
       setError(err.message || "Could not disable book.");
     }
   }
 
+  // Search books by title, author, or category.
   const filteredBooks = books.filter((book) => {
     const text =
       `${book.title} ${book.author} ${book.category}`.toLowerCase();
 
-    return text.includes(search.toLowerCase());
+    return text.includes(search.toLowerCase().trim());
   });
 
+  // Calculate dashboard statistics.
   const activeBooks = books.filter((book) => book.active);
+
   const totalStock = activeBooks.reduce(
     (sum, book) => sum + Number(book.stock || 0),
     0
@@ -280,6 +297,7 @@ function App() {
 
   return (
     <div className="app">
+      {/* Top navigation */}
       <header className="topbar">
         <a className="brand" href="#home">
           <span className="brand-icon">B</span>
@@ -290,13 +308,16 @@ function App() {
       </header>
 
       <main className="container" id="home">
+        {/* Hero section */}
         <section className="hero">
           <div>
             <p className="eyebrow">YOUR DIGITAL BOOKSTORE</p>
+
             <h1>Every book opens a new world.</h1>
+
             <p className="hero-description">
-              Manage your collection, update inventory, and keep your catalog
-              organized in one place.
+              Manage your collection, update inventory, and keep your
+              catalog organized in one place.
             </p>
           </div>
 
@@ -307,6 +328,7 @@ function App() {
           </div>
         </section>
 
+        {/* Dashboard statistics */}
         <section className="stats">
           <article className="stat-card">
             <span>Active titles</span>
@@ -324,20 +346,34 @@ function App() {
           </article>
         </section>
 
+        {/* Book management and catalog */}
         <section className="management-grid">
-          <section className="panel form-panel">
+          {/* Add and edit book form */}
+          <section className="panel form-panel" id="book-form">
             <div className="section-heading">
               <div>
                 <p className="eyebrow">CATALOG MANAGEMENT</p>
+
                 <h2>{editingId ? "Edit book" : "Add a new book"}</h2>
               </div>
 
-              <span className="heading-icon">+</span>
+              <button
+                className="heading-icon"
+                type="button"
+                aria-label="Add a new book"
+                title="Start adding a book"
+                onClick={handleAddButton}
+                disabled={saving}
+              >
+                +
+              </button>
             </div>
 
             <form onSubmit={handleSubmit}>
               <label htmlFor="title">Book title</label>
+
               <input
+                ref={titleInputRef}
                 id="title"
                 name="title"
                 placeholder="e.g. Atomic Habits"
@@ -347,6 +383,7 @@ function App() {
               />
 
               <label htmlFor="author">Author</label>
+
               <input
                 id="author"
                 name="author"
@@ -359,6 +396,7 @@ function App() {
               <div className="input-row">
                 <div>
                   <label htmlFor="price">Price (₹)</label>
+
                   <input
                     id="price"
                     name="price"
@@ -374,6 +412,7 @@ function App() {
 
                 <div>
                   <label htmlFor="stock">Stock</label>
+
                   <input
                     id="stock"
                     name="stock"
@@ -389,6 +428,7 @@ function App() {
               </div>
 
               <label htmlFor="category">Category</label>
+
               <input
                 id="category"
                 name="category"
@@ -423,6 +463,7 @@ function App() {
             </form>
           </section>
 
+          {/* Book catalog */}
           <section className="panel catalog-panel">
             <div className="section-heading">
               <div>
@@ -434,8 +475,9 @@ function App() {
                 className="refresh-button"
                 type="button"
                 onClick={loadBooks}
+                disabled={refreshing}
               >
-                Refresh
+                {refreshing ? "Refreshing..." : "Refresh"}
               </button>
             </div>
 
@@ -448,6 +490,7 @@ function App() {
               aria-label="Search books"
             />
 
+            {/* Success and error messages */}
             {error && (
               <p className="notice error-notice" role="alert">
                 {error}
@@ -460,10 +503,15 @@ function App() {
               </p>
             )}
 
+            {/* Loading and empty states */}
             {loading ? (
               <p className="empty-state">Loading books...</p>
             ) : filteredBooks.length === 0 ? (
-              <p className="empty-state">No matching books found.</p>
+              <p className="empty-state">
+                {search.trim()
+                  ? "No matching books found."
+                  : "No books yet. Add your first book using the form."}
+              </p>
             ) : (
               <div className="book-list">
                 {filteredBooks.map((book) => (
@@ -478,7 +526,9 @@ function App() {
 
                         <span
                           className={`status ${
-                            book.active ? "status-active" : "status-disabled"
+                            book.active
+                              ? "status-active"
+                              : "status-disabled"
                           }`}
                         >
                           {book.active ? "Active" : "Disabled"}
@@ -486,10 +536,14 @@ function App() {
                       </div>
 
                       <p className="book-author">by {book.author}</p>
+
                       <p className="book-category">{book.category}</p>
 
                       <div className="book-meta">
-                        <strong>₹{Number(book.price).toFixed(2)}</strong>
+                        <strong>
+                          ₹{Number(book.price).toFixed(2)}
+                        </strong>
+
                         <span>Stock: {book.stock}</span>
                       </div>
 
@@ -526,10 +580,13 @@ function App() {
           </section>
         </section>
 
+        {/* Database connection information */}
         <section className="database-note">
           <span className="database-dot" />
+
           <p>
             <strong>Database-backed catalog</strong>
+
             <span>
               {" "}
               Books are loaded from your Express API and MongoDB database.
