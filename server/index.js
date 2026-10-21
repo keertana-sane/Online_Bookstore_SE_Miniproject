@@ -1,4 +1,3 @@
-
 require("dotenv").config();
 
 const express = require("express");
@@ -8,7 +7,7 @@ const cors = require("cors");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Define the Book model using this server's Mongoose connection.
+// Book model: uses this server's Mongoose instance.
 const bookSchema = new mongoose.Schema(
   {
     title: {
@@ -57,9 +56,7 @@ const bookSchema = new mongoose.Schema(
       default: null,
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 const Book =
@@ -68,14 +65,14 @@ const Book =
 app.use(cors());
 app.use(express.json());
 
-// 1. Home route
+// Home route
 app.get("/", (req, res) => {
   res.json({
     message: "Online Bookstore API is running!",
   });
 });
 
-// 2. Health-check route
+// Health check
 app.get("/api/health", (req, res) => {
   const connected = mongoose.connection.readyState === 1;
 
@@ -86,7 +83,7 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// 3. Browse books with pagination (BK-10)
+// BK-10 + BK-11: Browse, paginate, and search the catalog.
 app.get("/api/books", async (req, res) => {
   try {
     const parsePositiveInteger = (value) => {
@@ -117,6 +114,26 @@ app.get("/api/books", async (req, res) => {
       });
     }
 
+    // Read and validate the search parameter.
+    const rawSearch = req.query.search;
+
+    if (
+      rawSearch !== undefined &&
+      typeof rawSearch !== "string"
+    ) {
+      return res.status(400).json({
+        message: "Search must be a single text value.",
+      });
+    }
+
+    const search = (rawSearch || "").trim();
+
+    if (search.length > 100) {
+      return res.status(400).json({
+        message: "Search must be 100 characters or fewer.",
+      });
+    }
+
     const limit = Math.min(requestedLimit, 50);
     const skip = (page - 1) * limit;
 
@@ -126,8 +143,42 @@ app.get("/api/books", async (req, res) => {
       });
     }
 
-    // Only active books appear in the catalog and inventory total.
+    // Only show active books.
     const filter = { is_active: true };
+
+    // Search by title, author, or category.
+    if (search.length > 0) {
+      // Escape special regex characters in the user's input.
+      const escapedSearch = search.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
+      );
+
+      filter.$or = [
+        {
+          title: {
+            $regex: escapedSearch,
+            $options: "i",
+          },
+        },
+        {
+          author: {
+            $regex: escapedSearch,
+            $options: "i",
+          },
+        },
+        {
+          category: {
+            $regex: escapedSearch,
+            $options: "i",
+          },
+        },
+      ];
+    }
+
+    console.log(
+      `GET /api/books | search="${search}" | page=${page} | limit=${limit}`
+    );
 
     const [books, totalBooks, stockResult] = await Promise.all([
       Book.find(filter)
@@ -138,12 +189,17 @@ app.get("/api/books", async (req, res) => {
 
       Book.countDocuments(filter),
 
+      // Total stock across the complete active catalog.
       Book.aggregate([
-        { $match: filter },
+        {
+          $match: { is_active: true },
+        },
         {
           $group: {
             _id: null,
-            totalStock: { $sum: "$stock_quantity" },
+            totalStock: {
+              $sum: "$stock_quantity",
+            },
           },
         },
       ]),
@@ -152,6 +208,7 @@ app.get("/api/books", async (req, res) => {
     const totalStock = stockResult[0]?.totalStock ?? 0;
 
     return res.json({
+      search,
       books: books.map((book) => ({
         ...book,
         stock: book.stock_quantity,
@@ -174,7 +231,7 @@ app.get("/api/books", async (req, res) => {
   }
 });
 
-// 4. Add a new book
+// Add a book
 app.post("/api/books", async (req, res) => {
   try {
     const { title, author, price, category, stock } = req.body;
@@ -230,7 +287,7 @@ app.post("/api/books", async (req, res) => {
   }
 });
 
-// 5. Edit book details
+// Edit book details
 app.put("/api/books/:id", async (req, res) => {
   try {
     const { title, author, price, category } = req.body;
@@ -299,7 +356,7 @@ app.put("/api/books/:id", async (req, res) => {
   }
 });
 
-// 6. Update stock
+// Update stock
 app.patch("/api/books/:id/stock", async (req, res) => {
   try {
     const { stock } = req.body;
@@ -352,7 +409,7 @@ app.patch("/api/books/:id/stock", async (req, res) => {
   }
 });
 
-// 7. Disable a book without deleting it
+// Disable a book without deleting it
 app.patch("/api/books/:id/disable", async (req, res) => {
   try {
     const book = await Book.findByIdAndUpdate(
@@ -397,7 +454,7 @@ app.patch("/api/books/:id/disable", async (req, res) => {
   }
 });
 
-// 8. Connect to MongoDB and start the server
+// Connect to MongoDB and start the server
 async function startServer() {
   try {
     const mongoUri = process.env.MONGODB_URI;
