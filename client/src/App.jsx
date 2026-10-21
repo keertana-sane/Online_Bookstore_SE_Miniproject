@@ -1,8 +1,11 @@
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import "./App.css";
 
 const API_URL =
   import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
+const PAGE_SIZE = 20;
 
 const EMPTY_FORM = {
   title: "",
@@ -14,6 +17,14 @@ const EMPTY_FORM = {
 
 function App() {
   const [books, setBooks] = useState([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: PAGE_SIZE,
+    totalBooks: 0,
+    totalPages: 0,
+    totalStock: 0,
+  });
+
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -25,25 +36,57 @@ function App() {
 
   const titleInputRef = useRef(null);
 
-  // Load books from the backend API.
-  const loadBooks = useCallback(async () => {
+  // Fetch a page of books and the catalog-wide statistics.
+  const loadBooks = useCallback(async (requestedPage = 1) => {
     setRefreshing(true);
 
     try {
       setError("");
 
-      const response = await fetch(`${API_URL}/books`);
+      const response = await fetch(
+        `${API_URL}/books?page=${requestedPage}&limit=${PAGE_SIZE}`
+      );
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(data.message || "Could not load books.");
       }
 
-      if (!Array.isArray(data)) {
+      const catalog = Array.isArray(data) ? data : data.books;
+
+      if (!Array.isArray(catalog)) {
         throw new Error("Unexpected response from the bookstore API.");
       }
 
-      setBooks(data);
+      setBooks(
+        catalog.map((book) => ({
+          ...book,
+          stock: book.stock ?? book.stock_quantity ?? 0,
+          active: book.active ?? book.is_active ?? true,
+        }))
+      );
+
+      if (data.pagination) {
+        setPagination({
+          page: data.pagination.page ?? requestedPage,
+          limit: data.pagination.limit ?? PAGE_SIZE,
+          totalBooks: data.pagination.totalBooks ?? catalog.length,
+          totalPages: data.pagination.totalPages ?? 0,
+          totalStock: data.pagination.totalStock ?? 0,
+        });
+      } else {
+        setPagination({
+          page: 1,
+          limit: catalog.length,
+          totalBooks: catalog.length,
+          totalPages: catalog.length > 0 ? 1 : 0,
+          totalStock: catalog.reduce(
+            (sum, book) =>
+              sum + Number(book.stock ?? book.stock_quantity ?? 0),
+            0
+          ),
+        });
+      }
     } catch (err) {
       setError(
         err.message ||
@@ -56,26 +99,19 @@ function App() {
   }, []);
 
   useEffect(() => {
-    loadBooks();
+    loadBooks(1);
   }, [loadBooks]);
 
-  // Handle changes in form fields.
   function handleChange(event) {
     const { name, value } = event.target;
-
-    setForm((previous) => ({
-      ...previous,
-      [name]: value,
-    }));
+    setForm((previous) => ({ ...previous, [name]: value }));
   }
 
-  // Reset the form.
   function resetForm() {
     setForm({ ...EMPTY_FORM });
     setEditingId(null);
   }
 
-  // Start adding a new book.
   function handleAddButton() {
     resetForm();
     setError("");
@@ -88,7 +124,7 @@ function App() {
     titleInputRef.current?.focus();
   }
 
-  // Add a new book or update an existing book.
+  // Create a book or update an existing book.
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -123,9 +159,7 @@ function App() {
     }
 
     setSaving(true);
-
     const isEditing = editingId !== null;
-
     const url = isEditing
       ? `${API_URL}/books/${editingId}`
       : `${API_URL}/books`;
@@ -133,29 +167,16 @@ function App() {
     try {
       const response = await fetch(url, {
         method: isEditing ? "PUT" : "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      const responseText = await response.text();
-
-      let result = {};
-
-      try {
-        result = responseText ? JSON.parse(responseText) : {};
-      } catch {
-        throw new Error(
-          `The server returned an unexpected response (HTTP ${response.status}).`
-        );
-      }
+      const result = await response.json();
 
       if (!response.ok) {
         throw new Error(
           result.message ||
-            result.error ||
-            `Unable to ${isEditing ? "update" : "add"} book (HTTP ${response.status}).`
+            `Unable to ${isEditing ? "update" : "add"} book.`
         );
       }
 
@@ -166,19 +187,14 @@ function App() {
       );
 
       resetForm();
-
-      await loadBooks();
+      await loadBooks(1);
     } catch (err) {
-      setError(
-        err.message ||
-          "Unable to save the book. Check that the backend and MongoDB are running."
-      );
+      setError(err.message || "Unable to save the book.");
     } finally {
       setSaving(false);
     }
   }
 
-  // Load a book into the form for editing.
   function startEditing(book) {
     setEditingId(book._id);
 
@@ -200,7 +216,7 @@ function App() {
     titleInputRef.current?.focus();
   }
 
-  // Update the stock quantity of a book.
+  // Update inventory quantity.
   async function updateStock(book) {
     const value = window.prompt(
       `Enter the new stock quantity for "${book.title}":`,
@@ -227,12 +243,8 @@ function App() {
         `${API_URL}/books/${book._id}/stock`,
         {
           method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            stock: Number(value),
-          }),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ stock: Number(value) }),
         }
       );
 
@@ -243,14 +255,13 @@ function App() {
       }
 
       setMessage("Stock updated successfully.");
-
-      await loadBooks();
+      await loadBooks(pagination.page);
     } catch (err) {
       setError(err.message || "Could not update stock.");
     }
   }
 
-  // Disable a book without deleting it from the database.
+  // Disable a book without deleting it.
   async function disableBook(book) {
     if (!window.confirm(`Disable "${book.title}"?`)) return;
 
@@ -260,9 +271,7 @@ function App() {
     try {
       const response = await fetch(
         `${API_URL}/books/${book._id}/disable`,
-        {
-          method: "PATCH",
-        }
+        { method: "PATCH" }
       );
 
       const result = await response.json();
@@ -272,49 +281,37 @@ function App() {
       }
 
       setMessage("Book disabled successfully.");
-
-      await loadBooks();
+      await loadBooks(pagination.page);
     } catch (err) {
       setError(err.message || "Could not disable book.");
     }
   }
 
-  // Search books by title, author, or category.
   const filteredBooks = books.filter((book) => {
-    const text =
+    const searchableText =
       `${book.title} ${book.author} ${book.category}`.toLowerCase();
 
-    return text.includes(search.toLowerCase().trim());
+    return searchableText.includes(search.toLowerCase().trim());
   });
 
-  // Calculate dashboard statistics.
-  const activeBooks = books.filter((book) => book.active);
-
-  const totalStock = activeBooks.reduce(
-    (sum, book) => sum + Number(book.stock || 0),
-    0
-  );
+  const currentPage = pagination.page || 1;
+  const totalPages = pagination.totalPages || 0;
 
   return (
     <div className="app">
-      {/* Top navigation */}
       <header className="topbar">
         <a className="brand" href="#home">
           <span className="brand-icon">B</span>
           <span>BookNest</span>
         </a>
-
         <span className="admin-label">BOOKSTORE MANAGEMENT</span>
       </header>
 
       <main className="container" id="home">
-        {/* Hero section */}
         <section className="hero">
           <div>
             <p className="eyebrow">YOUR DIGITAL BOOKSTORE</p>
-
             <h1>Every book opens a new world.</h1>
-
             <p className="hero-description">
               Manage your collection, update inventory, and keep your
               catalog organized in one place.
@@ -328,32 +325,36 @@ function App() {
           </div>
         </section>
 
-        {/* Dashboard statistics */}
+        {/* Catalog-wide statistics */}
         <section className="stats">
           <article className="stat-card">
             <span>Active titles</span>
-            <strong>{activeBooks.length}</strong>
+            <strong>
+              {loading ? "…" : pagination.totalBooks.toLocaleString("en-IN")}
+            </strong>
           </article>
 
           <article className="stat-card">
             <span>Total stock</span>
-            <strong>{totalStock}</strong>
+            <strong>
+              {loading ? "…" : pagination.totalStock.toLocaleString("en-IN")}
+            </strong>
           </article>
 
           <article className="stat-card">
             <span>All records</span>
-            <strong>{books.length}</strong>
+            <strong>
+              {loading ? "…" : pagination.totalBooks.toLocaleString("en-IN")}
+            </strong>
           </article>
         </section>
 
-        {/* Book management and catalog */}
         <section className="management-grid">
-          {/* Add and edit book form */}
+          {/* Add/edit form */}
           <section className="panel form-panel" id="book-form">
             <div className="section-heading">
               <div>
                 <p className="eyebrow">CATALOG MANAGEMENT</p>
-
                 <h2>{editingId ? "Edit book" : "Add a new book"}</h2>
               </div>
 
@@ -371,7 +372,6 @@ function App() {
 
             <form onSubmit={handleSubmit}>
               <label htmlFor="title">Book title</label>
-
               <input
                 ref={titleInputRef}
                 id="title"
@@ -383,7 +383,6 @@ function App() {
               />
 
               <label htmlFor="author">Author</label>
-
               <input
                 id="author"
                 name="author"
@@ -396,7 +395,6 @@ function App() {
               <div className="input-row">
                 <div>
                   <label htmlFor="price">Price (₹)</label>
-
                   <input
                     id="price"
                     name="price"
@@ -412,7 +410,6 @@ function App() {
 
                 <div>
                   <label htmlFor="stock">Stock</label>
-
                   <input
                     id="stock"
                     name="stock"
@@ -428,7 +425,6 @@ function App() {
               </div>
 
               <label htmlFor="category">Category</label>
-
               <input
                 id="category"
                 name="category"
@@ -463,7 +459,7 @@ function App() {
             </form>
           </section>
 
-          {/* Book catalog */}
+          {/* Catalog */}
           <section className="panel catalog-panel">
             <div className="section-heading">
               <div>
@@ -474,7 +470,7 @@ function App() {
               <button
                 className="refresh-button"
                 type="button"
-                onClick={loadBooks}
+                onClick={() => loadBooks(currentPage)}
                 disabled={refreshing}
               >
                 {refreshing ? "Refreshing..." : "Refresh"}
@@ -487,10 +483,9 @@ function App() {
               placeholder="Search title, author, or category..."
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              aria-label="Search books"
+              aria-label="Search title, author, or category on this page"
             />
 
-            {/* Success and error messages */}
             {error && (
               <p className="notice error-notice" role="alert">
                 {error}
@@ -503,14 +498,13 @@ function App() {
               </p>
             )}
 
-            {/* Loading and empty states */}
             {loading ? (
               <p className="empty-state">Loading books...</p>
             ) : filteredBooks.length === 0 ? (
               <p className="empty-state">
                 {search.trim()
-                  ? "No matching books found."
-                  : "No books yet. Add your first book using the form."}
+                  ? "No matching books on this page."
+                  : "No books found on this page."}
               </p>
             ) : (
               <div className="book-list">
@@ -523,7 +517,6 @@ function App() {
                     <div className="book-details">
                       <div className="book-title-row">
                         <h3>{book.title}</h3>
-
                         <span
                           className={`status ${
                             book.active
@@ -536,14 +529,10 @@ function App() {
                       </div>
 
                       <p className="book-author">by {book.author}</p>
-
                       <p className="book-category">{book.category}</p>
 
                       <div className="book-meta">
-                        <strong>
-                          ₹{Number(book.price).toFixed(2)}
-                        </strong>
-
+                        <strong>₹{Number(book.price).toFixed(2)}</strong>
                         <span>Stock: {book.stock}</span>
                       </div>
 
@@ -577,16 +566,42 @@ function App() {
                 ))}
               </div>
             )}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="pagination-controls">
+                <button
+                  className="refresh-button"
+                  type="button"
+                  disabled={refreshing || currentPage <= 1}
+                  onClick={() => loadBooks(currentPage - 1)}
+                >
+                  Previous
+                </button>
+
+                <span>
+                  Page {currentPage} of {totalPages}
+                  {" · "}
+                  {pagination.totalBooks.toLocaleString("en-IN")} books
+                </span>
+
+                <button
+                  className="refresh-button"
+                  type="button"
+                  disabled={refreshing || currentPage >= totalPages}
+                  onClick={() => loadBooks(currentPage + 1)}
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </section>
         </section>
 
-        {/* Database connection information */}
         <section className="database-note">
           <span className="database-dot" />
-
           <p>
             <strong>Database-backed catalog</strong>
-
             <span>
               {" "}
               Books are loaded from your Express API and MongoDB database.
