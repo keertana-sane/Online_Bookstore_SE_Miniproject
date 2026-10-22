@@ -1,3 +1,4 @@
+
 require("dotenv").config();
 
 const express = require("express");
@@ -7,60 +8,74 @@ const cors = require("cors");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-
-// 1. Define the Book model
+// Define the Book model using this server's Mongoose connection.
 const bookSchema = new mongoose.Schema(
   {
     title: {
       type: String,
       required: true,
       trim: true,
+      maxlength: 150,
     },
     author: {
       type: String,
       required: true,
       trim: true,
-    },
-    price: {
-      type: Number,
-      required: true,
-      min: 0.01,
+      maxlength: 100,
     },
     category: {
       type: String,
       required: true,
       trim: true,
+      maxlength: 50,
     },
-    stock: {
+    price: {
       type: Number,
       required: true,
       min: 0,
-      validate: {
-        validator: Number.isInteger,
-        message: "Stock must be a whole number.",
-      },
     },
-    active: {
+    stock_quantity: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 0,
+    },
+    description: {
+      type: String,
+      default: "",
+    },
+    cover_image: {
+      type: String,
+      default: "",
+    },
+    is_active: {
       type: Boolean,
       default: true,
     },
+    seedBatch: {
+      type: String,
+      default: null,
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
-const Book = mongoose.model("Book", bookSchema);
+const Book =
+  mongoose.models.Book || mongoose.model("Book", bookSchema);
 
-// 2. Home route
+app.use(cors());
+app.use(express.json());
+
+// 1. Home route
 app.get("/", (req, res) => {
   res.json({
     message: "Online Bookstore API is running!",
   });
 });
 
-// 3. Health-check route
+// 2. Health-check route
 app.get("/api/health", (req, res) => {
   const connected = mongoose.connection.readyState === 1;
 
@@ -71,21 +86,95 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// 4. Get all books
+// 3. Browse books with pagination (BK-10)
 app.get("/api/books", async (req, res) => {
   try {
-    const books = await Book.find().sort({ createdAt: -1 });
-    res.json(books);
-  } catch (error) {
-    console.error("Error fetching books:", error.message);
+    const parsePositiveInteger = (value) => {
+      if (
+        typeof value !== "string" ||
+        !/^[1-9]\d*$/.test(value)
+      ) {
+        return null;
+      }
 
-    res.status(500).json({
+      const parsed = Number(value);
+      return Number.isSafeInteger(parsed) ? parsed : null;
+    };
+
+    const page =
+      req.query.page === undefined
+        ? 1
+        : parsePositiveInteger(req.query.page);
+
+    const requestedLimit =
+      req.query.limit === undefined
+        ? 20
+        : parsePositiveInteger(req.query.limit);
+
+    if (page === null || requestedLimit === null) {
+      return res.status(400).json({
+        message: "Page and limit must be positive integers.",
+      });
+    }
+
+    const limit = Math.min(requestedLimit, 50);
+    const skip = (page - 1) * limit;
+
+    if (!Number.isSafeInteger(skip)) {
+      return res.status(400).json({
+        message: "Requested page is too large.",
+      });
+    }
+
+    // Only active books appear in the catalog and inventory total.
+    const filter = { is_active: true };
+
+    const [books, totalBooks, stockResult] = await Promise.all([
+      Book.find(filter)
+        .sort({ createdAt: -1, _id: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+
+      Book.countDocuments(filter),
+
+      Book.aggregate([
+        { $match: filter },
+        {
+          $group: {
+            _id: null,
+            totalStock: { $sum: "$stock_quantity" },
+          },
+        },
+      ]),
+    ]);
+
+    const totalStock = stockResult[0]?.totalStock ?? 0;
+
+    return res.json({
+      books: books.map((book) => ({
+        ...book,
+        stock: book.stock_quantity,
+        active: book.is_active,
+      })),
+      pagination: {
+        page,
+        limit,
+        totalBooks,
+        totalPages: Math.ceil(totalBooks / limit),
+        totalStock,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching books:", error);
+
+    return res.status(500).json({
       message: "Failed to fetch books.",
     });
   }
 });
 
-// 5. Add a new book
+// 4. Add a new book
 app.post("/api/books", async (req, res) => {
   try {
     const { title, author, price, category, stock } = req.body;
@@ -114,15 +203,20 @@ app.post("/api/books", async (req, res) => {
       author: author.trim(),
       price,
       category: category.trim(),
-      stock,
+      stock_quantity: stock,
+      is_active: true,
     });
 
     return res.status(201).json({
       message: "Book added successfully.",
-      book,
+      book: {
+        ...book.toObject(),
+        stock: book.stock_quantity,
+        active: book.is_active,
+      },
     });
   } catch (error) {
-    console.error("Error adding book:", error.message);
+    console.error("Error adding book:", error);
 
     if (error.name === "ValidationError") {
       return res.status(400).json({
@@ -136,7 +230,7 @@ app.post("/api/books", async (req, res) => {
   }
 });
 
-// 6. Edit book details
+// 5. Edit book details
 app.put("/api/books/:id", async (req, res) => {
   try {
     const { title, author, price, category } = req.body;
@@ -180,7 +274,11 @@ app.put("/api/books/:id", async (req, res) => {
 
     return res.json({
       message: "Book updated successfully.",
-      book,
+      book: {
+        ...book.toObject(),
+        stock: book.stock_quantity,
+        active: book.is_active,
+      },
     });
   } catch (error) {
     if (
@@ -193,7 +291,7 @@ app.put("/api/books/:id", async (req, res) => {
       });
     }
 
-    console.error("Error updating book:", error.message);
+    console.error("Error updating book:", error);
 
     return res.status(500).json({
       message: "Failed to update book.",
@@ -201,7 +299,7 @@ app.put("/api/books/:id", async (req, res) => {
   }
 });
 
-// 7. Update stock
+// 6. Update stock
 app.patch("/api/books/:id/stock", async (req, res) => {
   try {
     const { stock } = req.body;
@@ -214,7 +312,7 @@ app.patch("/api/books/:id/stock", async (req, res) => {
 
     const book = await Book.findByIdAndUpdate(
       req.params.id,
-      { stock },
+      { stock_quantity: stock },
       {
         new: true,
         runValidators: true,
@@ -229,7 +327,11 @@ app.patch("/api/books/:id/stock", async (req, res) => {
 
     return res.json({
       message: "Stock updated successfully.",
-      book,
+      book: {
+        ...book.toObject(),
+        stock: book.stock_quantity,
+        active: book.is_active,
+      },
     });
   } catch (error) {
     if (
@@ -242,7 +344,7 @@ app.patch("/api/books/:id/stock", async (req, res) => {
       });
     }
 
-    console.error("Error updating stock:", error.message);
+    console.error("Error updating stock:", error);
 
     return res.status(500).json({
       message: "Failed to update stock.",
@@ -250,12 +352,12 @@ app.patch("/api/books/:id/stock", async (req, res) => {
   }
 });
 
-// 8. Disable a book without deleting it
+// 7. Disable a book without deleting it
 app.patch("/api/books/:id/disable", async (req, res) => {
   try {
     const book = await Book.findByIdAndUpdate(
       req.params.id,
-      { active: false },
+      { is_active: false },
       {
         new: true,
         runValidators: true,
@@ -270,7 +372,11 @@ app.patch("/api/books/:id/disable", async (req, res) => {
 
     return res.json({
       message: "Book disabled successfully.",
-      book,
+      book: {
+        ...book.toObject(),
+        stock: book.stock_quantity,
+        active: book.is_active,
+      },
     });
   } catch (error) {
     if (
@@ -283,7 +389,7 @@ app.patch("/api/books/:id/disable", async (req, res) => {
       });
     }
 
-    console.error("Error disabling book:", error.message);
+    console.error("Error disabling book:", error);
 
     return res.status(500).json({
       message: "Failed to disable book.",
@@ -291,7 +397,7 @@ app.patch("/api/books/:id/disable", async (req, res) => {
   }
 });
 
-// 9. Connect to MongoDB and start the server
+// 8. Connect to MongoDB and start the server
 async function startServer() {
   try {
     const mongoUri = process.env.MONGODB_URI;
@@ -305,6 +411,7 @@ async function startServer() {
     await mongoose.connect(mongoUri);
 
     console.log("MongoDB connected successfully.");
+    console.log("Database:", mongoose.connection.name);
 
     app.listen(PORT, () => {
       console.log(
@@ -312,7 +419,7 @@ async function startServer() {
       );
     });
   } catch (error) {
-    console.error("Server startup failed:", error.message);
+    console.error("Server startup failed:", error);
     process.exit(1);
   }
 }
