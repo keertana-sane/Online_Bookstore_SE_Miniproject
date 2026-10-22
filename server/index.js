@@ -1,4 +1,3 @@
-
 require("dotenv").config();
 
 const express = require("express");
@@ -8,7 +7,7 @@ const cors = require("cors");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Define the Book model using this server's Mongoose connection.
+// Book model — field names match the seeded MongoDB collection.
 const bookSchema = new mongoose.Schema(
   {
     title: {
@@ -68,14 +67,14 @@ const Book =
 app.use(cors());
 app.use(express.json());
 
-// 1. Home route
+// Home route
 app.get("/", (req, res) => {
   res.json({
     message: "Online Bookstore API is running!",
   });
 });
 
-// 2. Health-check route
+// Health check
 app.get("/api/health", (req, res) => {
   const connected = mongoose.connection.readyState === 1;
 
@@ -86,7 +85,7 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// 3. Browse books with pagination (BK-10)
+// BK-10 + BK-11: Browse, paginate, and search books.
 app.get("/api/books", async (req, res) => {
   try {
     const parsePositiveInteger = (value) => {
@@ -117,6 +116,23 @@ app.get("/api/books", async (req, res) => {
       });
     }
 
+    if (
+      req.query.search !== undefined &&
+      typeof req.query.search !== "string"
+    ) {
+      return res.status(400).json({
+        message: "Search must be a single text value.",
+      });
+    }
+
+    const search = (req.query.search || "").trim();
+
+    if (search.length > 100) {
+      return res.status(400).json({
+        message: "Search must be 100 characters or fewer.",
+      });
+    }
+
     const limit = Math.min(requestedLimit, 50);
     const skip = (page - 1) * limit;
 
@@ -126,8 +142,21 @@ app.get("/api/books", async (req, res) => {
       });
     }
 
-    // Only active books appear in the catalog and inventory total.
     const filter = { is_active: true };
+
+    // BK-11: Search title, author, or category.
+    if (search) {
+      const escapedSearch = search.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
+      );
+
+      filter.$or = [
+        { title: { $regex: escapedSearch, $options: "i" } },
+        { author: { $regex: escapedSearch, $options: "i" } },
+        { category: { $regex: escapedSearch, $options: "i" } },
+      ];
+    }
 
     const [books, totalBooks, stockResult] = await Promise.all([
       Book.find(filter)
@@ -138,8 +167,9 @@ app.get("/api/books", async (req, res) => {
 
       Book.countDocuments(filter),
 
+      // Total stock across all active books, not just the current page.
       Book.aggregate([
-        { $match: filter },
+        { $match: { is_active: true } },
         {
           $group: {
             _id: null,
@@ -149,9 +179,8 @@ app.get("/api/books", async (req, res) => {
       ]),
     ]);
 
-    const totalStock = stockResult[0]?.totalStock ?? 0;
-
     return res.json({
+      search,
       books: books.map((book) => ({
         ...book,
         stock: book.stock_quantity,
@@ -162,7 +191,7 @@ app.get("/api/books", async (req, res) => {
         limit,
         totalBooks,
         totalPages: Math.ceil(totalBooks / limit),
-        totalStock,
+        totalStock: stockResult[0]?.totalStock ?? 0,
       },
     });
   } catch (error) {
@@ -174,7 +203,45 @@ app.get("/api/books", async (req, res) => {
   }
 });
 
-// 4. Add a new book
+// BK-12: Get one active book by MongoDB ID.
+app.get("/api/books/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({
+        message: "Invalid book ID.",
+      });
+    }
+
+    const book = await Book.findOne({
+      _id: id,
+      is_active: true,
+    }).lean();
+
+    if (!book) {
+      return res.status(404).json({
+        message: "Book not found.",
+      });
+    }
+
+    return res.status(200).json({
+      book: {
+        ...book,
+        stock: book.stock_quantity,
+        active: book.is_active,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching book details:", error);
+
+    return res.status(500).json({
+      message: "Failed to fetch book details.",
+    });
+  }
+});
+
+// Add a new book.
 app.post("/api/books", async (req, res) => {
   try {
     const { title, author, price, category, stock } = req.body;
@@ -230,9 +297,15 @@ app.post("/api/books", async (req, res) => {
   }
 });
 
-// 5. Edit book details
+// Edit book details.
 app.put("/api/books/:id", async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({
+        message: "Invalid book ID.",
+      });
+    }
+
     const { title, author, price, category } = req.body;
 
     if (
@@ -252,8 +325,8 @@ app.put("/api/books/:id", async (req, res) => {
       });
     }
 
-    const book = await Book.findByIdAndUpdate(
-      req.params.id,
+    const book = await Book.findOneAndUpdate(
+      { _id: req.params.id, is_active: true },
       {
         title: title.trim(),
         author: author.trim(),
@@ -281,16 +354,6 @@ app.put("/api/books/:id", async (req, res) => {
       },
     });
   } catch (error) {
-    if (
-      error.name === "CastError" ||
-      error.name === "BSONError" ||
-      error.name === "TypeError"
-    ) {
-      return res.status(400).json({
-        message: "Invalid book ID.",
-      });
-    }
-
     console.error("Error updating book:", error);
 
     return res.status(500).json({
@@ -299,9 +362,15 @@ app.put("/api/books/:id", async (req, res) => {
   }
 });
 
-// 6. Update stock
+// Update stock.
 app.patch("/api/books/:id/stock", async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({
+        message: "Invalid book ID.",
+      });
+    }
+
     const { stock } = req.body;
 
     if (!Number.isInteger(stock) || stock < 0) {
@@ -310,8 +379,8 @@ app.patch("/api/books/:id/stock", async (req, res) => {
       });
     }
 
-    const book = await Book.findByIdAndUpdate(
-      req.params.id,
+    const book = await Book.findOneAndUpdate(
+      { _id: req.params.id, is_active: true },
       { stock_quantity: stock },
       {
         new: true,
@@ -334,16 +403,6 @@ app.patch("/api/books/:id/stock", async (req, res) => {
       },
     });
   } catch (error) {
-    if (
-      error.name === "CastError" ||
-      error.name === "BSONError" ||
-      error.name === "TypeError"
-    ) {
-      return res.status(400).json({
-        message: "Invalid book ID.",
-      });
-    }
-
     console.error("Error updating stock:", error);
 
     return res.status(500).json({
@@ -352,9 +411,15 @@ app.patch("/api/books/:id/stock", async (req, res) => {
   }
 });
 
-// 7. Disable a book without deleting it
+// Disable a book without deleting it.
 app.patch("/api/books/:id/disable", async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({
+        message: "Invalid book ID.",
+      });
+    }
+
     const book = await Book.findByIdAndUpdate(
       req.params.id,
       { is_active: false },
@@ -379,16 +444,6 @@ app.patch("/api/books/:id/disable", async (req, res) => {
       },
     });
   } catch (error) {
-    if (
-      error.name === "CastError" ||
-      error.name === "BSONError" ||
-      error.name === "TypeError"
-    ) {
-      return res.status(400).json({
-        message: "Invalid book ID.",
-      });
-    }
-
     console.error("Error disabling book:", error);
 
     return res.status(500).json({
@@ -397,7 +452,7 @@ app.patch("/api/books/:id/disable", async (req, res) => {
   }
 });
 
-// 8. Connect to MongoDB and start the server
+// Connect to MongoDB and start the server.
 async function startServer() {
   try {
     const mongoUri = process.env.MONGODB_URI;
@@ -419,7 +474,7 @@ async function startServer() {
       );
     });
   } catch (error) {
-    console.error("Server startup failed:", error);
+    console.error("Server startup failed:", error.message);
     process.exit(1);
   }
 }
