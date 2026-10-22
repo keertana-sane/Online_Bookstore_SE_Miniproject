@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useRef, useState } from "react";
 import "./App.css";
 
@@ -36,16 +35,20 @@ function App() {
 
   const titleInputRef = useRef(null);
 
-  // Fetch a page of books and the catalog-wide statistics.
-  const loadBooks = useCallback(async (requestedPage = 1) => {
+  // Fetch books from the backend with pagination and search.
+  const loadBooks = useCallback(async (requestedPage = 1, searchTerm = "") => {
     setRefreshing(true);
 
     try {
       setError("");
 
-      const response = await fetch(
-        `${API_URL}/books?page=${requestedPage}&limit=${PAGE_SIZE}`
-      );
+      const params = new URLSearchParams({
+        page: String(requestedPage),
+        limit: String(PAGE_SIZE),
+        search: searchTerm.trim(),
+      });
+
+      const response = await fetch(`${API_URL}/books?${params}`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -98,9 +101,14 @@ function App() {
     }
   }, []);
 
+  // Reload the catalog when the search input changes.
   useEffect(() => {
-    loadBooks(1);
-  }, [loadBooks]);
+    const timer = setTimeout(() => {
+      loadBooks(1, search);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [loadBooks, search]);
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -159,6 +167,7 @@ function App() {
     }
 
     setSaving(true);
+
     const isEditing = editingId !== null;
     const url = isEditing
       ? `${API_URL}/books/${editingId}`
@@ -187,7 +196,7 @@ function App() {
       );
 
       resetForm();
-      await loadBooks(1);
+      await loadBooks(1, search);
     } catch (err) {
       setError(err.message || "Unable to save the book.");
     } finally {
@@ -255,7 +264,7 @@ function App() {
       }
 
       setMessage("Stock updated successfully.");
-      await loadBooks(pagination.page);
+      await loadBooks(pagination.page, search);
     } catch (err) {
       setError(err.message || "Could not update stock.");
     }
@@ -281,18 +290,14 @@ function App() {
       }
 
       setMessage("Book disabled successfully.");
-      await loadBooks(pagination.page);
+      await loadBooks(pagination.page, search);
     } catch (err) {
       setError(err.message || "Could not disable book.");
     }
   }
 
-  const filteredBooks = books.filter((book) => {
-    const searchableText =
-      `${book.title} ${book.author} ${book.category}`.toLowerCase();
-
-    return searchableText.includes(search.toLowerCase().trim());
-  });
+  // Books are already filtered by the backend.
+  const filteredBooks = books;
 
   const currentPage = pagination.page || 1;
   const totalPages = pagination.totalPages || 0;
@@ -304,6 +309,7 @@ function App() {
           <span className="brand-icon">B</span>
           <span>BookNest</span>
         </a>
+
         <span className="admin-label">BOOKSTORE MANAGEMENT</span>
       </header>
 
@@ -470,7 +476,7 @@ function App() {
               <button
                 className="refresh-button"
                 type="button"
-                onClick={() => loadBooks(currentPage)}
+                onClick={() => loadBooks(currentPage, search)}
                 disabled={refreshing}
               >
                 {refreshing ? "Refreshing..." : "Refresh"}
@@ -483,7 +489,7 @@ function App() {
               placeholder="Search title, author, or category..."
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              aria-label="Search title, author, or category on this page"
+              aria-label="Search books by title, author, or category"
             />
 
             {error && (
@@ -500,11 +506,13 @@ function App() {
 
             {loading ? (
               <p className="empty-state">Loading books...</p>
+            ) : refreshing ? (
+              <p className="empty-state">Loading matching books...</p>
             ) : filteredBooks.length === 0 ? (
               <p className="empty-state">
                 {search.trim()
-                  ? "No matching books on this page."
-                  : "No books found on this page."}
+                  ? "No matching books found."
+                  : "No books found in the catalog."}
               </p>
             ) : (
               <div className="book-list">
@@ -517,6 +525,7 @@ function App() {
                     <div className="book-details">
                       <div className="book-title-row">
                         <h3>{book.title}</h3>
+
                         <span
                           className={`status ${
                             book.active
@@ -574,7 +583,7 @@ function App() {
                   className="refresh-button"
                   type="button"
                   disabled={refreshing || currentPage <= 1}
-                  onClick={() => loadBooks(currentPage - 1)}
+                  onClick={() => loadBooks(currentPage - 1, search)}
                 >
                   Previous
                 </button>
@@ -589,7 +598,7 @@ function App() {
                   className="refresh-button"
                   type="button"
                   disabled={refreshing || currentPage >= totalPages}
-                  onClick={() => loadBooks(currentPage + 1)}
+                  onClick={() => loadBooks(currentPage + 1, search)}
                 >
                   Next
                 </button>
