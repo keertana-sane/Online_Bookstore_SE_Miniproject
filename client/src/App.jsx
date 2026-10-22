@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useRef, useState } from "react";
 import "./App.css";
 
@@ -34,73 +33,90 @@ function App() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState(null);
 
+  // BK-12: Book details state.
+  const [selectedBook, setSelectedBook] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState("");
+
   const titleInputRef = useRef(null);
 
-  // Fetch a page of books and the catalog-wide statistics.
-  const loadBooks = useCallback(async (requestedPage = 1) => {
-    setRefreshing(true);
+  // BK-10 + BK-11: Paginated catalog and backend search.
+  const loadBooks = useCallback(
+    async (requestedPage = 1, searchTerm = "") => {
+      setRefreshing(true);
 
-    try {
-      setError("");
+      try {
+        setError("");
 
-      const response = await fetch(
-        `${API_URL}/books?page=${requestedPage}&limit=${PAGE_SIZE}`
-      );
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Could not load books.");
-      }
-
-      const catalog = Array.isArray(data) ? data : data.books;
-
-      if (!Array.isArray(catalog)) {
-        throw new Error("Unexpected response from the bookstore API.");
-      }
-
-      setBooks(
-        catalog.map((book) => ({
-          ...book,
-          stock: book.stock ?? book.stock_quantity ?? 0,
-          active: book.active ?? book.is_active ?? true,
-        }))
-      );
-
-      if (data.pagination) {
-        setPagination({
-          page: data.pagination.page ?? requestedPage,
-          limit: data.pagination.limit ?? PAGE_SIZE,
-          totalBooks: data.pagination.totalBooks ?? catalog.length,
-          totalPages: data.pagination.totalPages ?? 0,
-          totalStock: data.pagination.totalStock ?? 0,
+        const params = new URLSearchParams({
+          page: String(requestedPage),
+          limit: String(PAGE_SIZE),
+          search: searchTerm.trim(),
         });
-      } else {
-        setPagination({
-          page: 1,
-          limit: catalog.length,
-          totalBooks: catalog.length,
-          totalPages: catalog.length > 0 ? 1 : 0,
-          totalStock: catalog.reduce(
-            (sum, book) =>
-              sum + Number(book.stock ?? book.stock_quantity ?? 0),
-            0
-          ),
-        });
-      }
-    } catch (err) {
-      setError(
-        err.message ||
-          "Cannot connect to the bookstore API. Check that the backend is running."
-      );
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
 
+        const response = await fetch(`${API_URL}/books?${params}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Could not load books.");
+        }
+
+        const catalog = Array.isArray(data) ? data : data.books;
+
+        if (!Array.isArray(catalog)) {
+          throw new Error("Unexpected response from the bookstore API.");
+        }
+
+        setBooks(
+          catalog.map((book) => ({
+            ...book,
+            stock: book.stock ?? book.stock_quantity ?? 0,
+            active: book.active ?? book.is_active ?? true,
+          }))
+        );
+
+        if (data.pagination) {
+          setPagination({
+            page: data.pagination.page ?? requestedPage,
+            limit: data.pagination.limit ?? PAGE_SIZE,
+            totalBooks: data.pagination.totalBooks ?? catalog.length,
+            totalPages: data.pagination.totalPages ?? 0,
+            totalStock: data.pagination.totalStock ?? 0,
+          });
+        } else {
+          setPagination({
+            page: 1,
+            limit: catalog.length,
+            totalBooks: catalog.length,
+            totalPages: catalog.length > 0 ? 1 : 0,
+            totalStock: catalog.reduce(
+              (sum, book) =>
+                sum + Number(book.stock ?? book.stock_quantity ?? 0),
+              0
+            ),
+          });
+        }
+      } catch (err) {
+        setError(
+          err.message ||
+            "Cannot connect to the bookstore API. Check that the backend is running."
+        );
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    []
+  );
+
+  // Debounce search so the API is not called for every keystroke.
   useEffect(() => {
-    loadBooks(1);
-  }, [loadBooks]);
+    const timer = setTimeout(() => {
+      loadBooks(1, search);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [loadBooks, search]);
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -124,7 +140,7 @@ function App() {
     titleInputRef.current?.focus();
   }
 
-  // Create a book or update an existing book.
+  // Add a new book or edit an existing book.
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -159,6 +175,7 @@ function App() {
     }
 
     setSaving(true);
+
     const isEditing = editingId !== null;
     const url = isEditing
       ? `${API_URL}/books/${editingId}`
@@ -187,7 +204,7 @@ function App() {
       );
 
       resetForm();
-      await loadBooks(1);
+      await loadBooks(1, search);
     } catch (err) {
       setError(err.message || "Unable to save the book.");
     } finally {
@@ -255,7 +272,7 @@ function App() {
       }
 
       setMessage("Stock updated successfully.");
-      await loadBooks(pagination.page);
+      await loadBooks(pagination.page, search);
     } catch (err) {
       setError(err.message || "Could not update stock.");
     }
@@ -281,18 +298,43 @@ function App() {
       }
 
       setMessage("Book disabled successfully.");
-      await loadBooks(pagination.page);
+      setSelectedBook(null);
+      await loadBooks(pagination.page, search);
     } catch (err) {
       setError(err.message || "Could not disable book.");
     }
   }
 
-  const filteredBooks = books.filter((book) => {
-    const searchableText =
-      `${book.title} ${book.author} ${book.category}`.toLowerCase();
+  // BK-12: Fetch one book's full details by its MongoDB ID.
+  async function viewBookDetails(book) {
+    setSelectedBook(null);
+    setDetailError("");
+    setDetailLoading(true);
 
-    return searchableText.includes(search.toLowerCase().trim());
-  });
+    try {
+      const response = await fetch(`${API_URL}/books/${book._id}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Could not load book details.");
+      }
+
+      const details = data.book ?? data;
+
+      setSelectedBook({
+        ...details,
+        stock: details.stock ?? details.stock_quantity ?? 0,
+        active: details.active ?? details.is_active ?? true,
+      });
+    } catch (err) {
+      setDetailError(err.message || "Could not load book details.");
+    } finally {
+      setDetailLoading(false);
+    }
+  }
+
+  // Search is performed by the backend.
+  const filteredBooks = books;
 
   const currentPage = pagination.page || 1;
   const totalPages = pagination.totalPages || 0;
@@ -304,6 +346,7 @@ function App() {
           <span className="brand-icon">B</span>
           <span>BookNest</span>
         </a>
+
         <span className="admin-label">BOOKSTORE MANAGEMENT</span>
       </header>
 
@@ -459,6 +502,79 @@ function App() {
             </form>
           </section>
 
+          {/* BK-12: Book details panel */}
+          {(detailLoading || detailError || selectedBook) && (
+            <section className="panel book-detail-panel">
+              {detailLoading && <p>Loading book details...</p>}
+
+              {detailError && (
+                <p className="notice error-notice" role="alert">
+                  {detailError}
+                </p>
+              )}
+
+              {selectedBook && (
+                <>
+                  <div className="section-heading">
+                    <div>
+                      <p className="eyebrow">BOOK INFORMATION</p>
+                      <h2>{selectedBook.title}</h2>
+                    </div>
+
+                    <button
+                      className="refresh-button"
+                      type="button"
+                      onClick={() => {
+                        setSelectedBook(null);
+                        setDetailError("");
+                      }}
+                    >
+                      Back to catalog
+                    </button>
+                  </div>
+
+                  {selectedBook.cover_image && (
+                    <img
+                      src={selectedBook.cover_image}
+                      alt={`Cover of ${selectedBook.title}`}
+                      style={{
+                        width: "140px",
+                        maxHeight: "200px",
+                        objectFit: "cover",
+                        borderRadius: "8px",
+                        marginBottom: "16px",
+                      }}
+                    />
+                  )}
+
+                  <div className="book-detail-content">
+                    <p>
+                      <strong>Author:</strong> {selectedBook.author}
+                    </p>
+                    <p>
+                      <strong>Category:</strong> {selectedBook.category}
+                    </p>
+                    <p>
+                      <strong>Price:</strong>{" "}
+                      ₹{Number(selectedBook.price).toFixed(2)}
+                    </p>
+                    <p>
+                      <strong>Stock:</strong> {selectedBook.stock}
+                    </p>
+                    <p>
+                      <strong>Status:</strong>{" "}
+                      {selectedBook.active ? "Active" : "Disabled"}
+                    </p>
+                    <p>
+                      <strong>Description:</strong>{" "}
+                      {selectedBook.description || "No description available."}
+                    </p>
+                  </div>
+                </>
+              )}
+            </section>
+          )}
+
           {/* Catalog */}
           <section className="panel catalog-panel">
             <div className="section-heading">
@@ -470,7 +586,7 @@ function App() {
               <button
                 className="refresh-button"
                 type="button"
-                onClick={() => loadBooks(currentPage)}
+                onClick={() => loadBooks(currentPage, search)}
                 disabled={refreshing}
               >
                 {refreshing ? "Refreshing..." : "Refresh"}
@@ -483,7 +599,7 @@ function App() {
               placeholder="Search title, author, or category..."
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              aria-label="Search title, author, or category on this page"
+              aria-label="Search books by title, author, or category"
             />
 
             {error && (
@@ -500,10 +616,12 @@ function App() {
 
             {loading ? (
               <p className="empty-state">Loading books...</p>
+            ) : refreshing ? (
+              <p className="empty-state">Loading matching books...</p>
             ) : filteredBooks.length === 0 ? (
               <p className="empty-state">
                 {search.trim()
-                  ? "No matching books on this page."
+                  ? "No matching books found."
                   : "No books found on this page."}
               </p>
             ) : (
@@ -517,6 +635,7 @@ function App() {
                     <div className="book-details">
                       <div className="book-title-row">
                         <h3>{book.title}</h3>
+
                         <span
                           className={`status ${
                             book.active
@@ -535,6 +654,14 @@ function App() {
                         <strong>₹{Number(book.price).toFixed(2)}</strong>
                         <span>Stock: {book.stock}</span>
                       </div>
+
+                      {/* BK-12: Open details for this book */}
+                      <button
+                        type="button"
+                        onClick={() => viewBookDetails(book)}
+                      >
+                        View Details
+                      </button>
 
                       {book.active && (
                         <div className="book-actions">
@@ -567,14 +694,14 @@ function App() {
               </div>
             )}
 
-            {/* Pagination */}
+            {/* BK-10: Pagination */}
             {totalPages > 1 && (
               <div className="pagination-controls">
                 <button
                   className="refresh-button"
                   type="button"
                   disabled={refreshing || currentPage <= 1}
-                  onClick={() => loadBooks(currentPage - 1)}
+                  onClick={() => loadBooks(currentPage - 1, search)}
                 >
                   Previous
                 </button>
@@ -589,7 +716,7 @@ function App() {
                   className="refresh-button"
                   type="button"
                   disabled={refreshing || currentPage >= totalPages}
-                  onClick={() => loadBooks(currentPage + 1)}
+                  onClick={() => loadBooks(currentPage + 1, search)}
                 >
                   Next
                 </button>
