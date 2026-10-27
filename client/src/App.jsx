@@ -1,9 +1,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import "./App.css";
+import AuthDialog from "./components/AuthDialog.jsx";
+import { TOKEN_KEY } from "./api/authApi.js";
 
 const API_URL =
   import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const AUTH_EMAIL_KEY = "userEmail";
+const AUTH_ROLE_KEY = "userRole";
 const PAGE_SIZE = 20;
 
 const EMPTY_FORM = {
@@ -15,6 +19,15 @@ const EMPTY_FORM = {
 };
 
 function App() {
+  const [authUser, setAuthUser] = useState(() => {
+    const token = window.sessionStorage.getItem(TOKEN_KEY);
+    if (!token) return null;
+    return {
+      email: window.sessionStorage.getItem(AUTH_EMAIL_KEY) || "",
+      role: window.sessionStorage.getItem(AUTH_ROLE_KEY) || "",
+    };
+  });
+  const [authDialogMode, setAuthDialogMode] = useState(null);
   const [books, setBooks] = useState([]);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -319,6 +332,24 @@ function App() {
   const currentPage = pagination.page || 1;
   const totalPages = pagination.totalPages || 0;
 
+  function handleLogin(result, email) {
+    if (typeof result?.token !== "string" || !result.token) {
+      throw new Error("The bookstore API did not return a login token.");
+    }
+    window.sessionStorage.setItem(TOKEN_KEY, result.token);
+    window.sessionStorage.setItem(AUTH_EMAIL_KEY, email);
+    window.sessionStorage.setItem(AUTH_ROLE_KEY, result.role || "");
+    setAuthUser({ email, role: result.role || "" });
+    setAuthDialogMode(null);
+  }
+
+  function handleLogout() {
+    window.sessionStorage.removeItem(TOKEN_KEY);
+    window.sessionStorage.removeItem(AUTH_EMAIL_KEY);
+    window.sessionStorage.removeItem(AUTH_ROLE_KEY);
+    setAuthUser(null);
+  }
+
   return (
     <div className="app">
       <header className="topbar">
@@ -326,8 +357,46 @@ function App() {
           <span className="brand-icon">B</span>
           <span>BookNest</span>
         </a>
-        <span className="admin-label">BOOKSTORE MANAGEMENT</span>
+
+        <div className="topbar-actions">
+          <span className="admin-label">BOOKSTORE MANAGEMENT</span>
+          {authUser ? (
+            <>
+              <span className="signed-in-label" title={authUser.role}>
+                {authUser.email || "Signed in"}
+              </span>
+              <button className="auth-nav-button" type="button" onClick={handleLogout}>
+                Sign out
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                className="auth-nav-button"
+                type="button"
+                onClick={() => setAuthDialogMode("login")}
+              >
+                Sign in
+              </button>
+              <button
+                className="auth-nav-button auth-nav-primary"
+                type="button"
+                onClick={() => setAuthDialogMode("register")}
+              >
+                Create account
+              </button>
+            </>
+          )}
+        </div>
       </header>
+
+      {authDialogMode && (
+        <AuthDialog
+          initialMode={authDialogMode}
+          onClose={() => setAuthDialogMode(null)}
+          onLogin={handleLogin}
+        />
+      )}
 
       <main className="container" id="home">
         {/* BK-13: Catalog home section */}

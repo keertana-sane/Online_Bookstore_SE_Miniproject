@@ -13,12 +13,15 @@ const { createOrderRouter } = require('./orderRoutes');
  * Cart & checkout module wiring (SAD C-06, C-07, C-08) with the real Mongo
  * repositories and the mock payment service.
  *
- * In the app (once the scaffold and the auth middleware exist):
+ * In the app:
  *
+ *   const { createAuthModule } = require('./routes/authModule');
  *   const { createCartCheckoutRouter } = require('./routes/cartCheckoutModule');
+ *   const { router: authRouter, authenticate } = createAuthModule();
+ *   app.use('/api/v1', authRouter);
  *   app.use('/api/v1', createCartCheckoutRouter({ authenticate }));
  *
- * `authenticate` is the JWT middleware from the Auth module; it must set req.user.id.
+ * `authenticate` verifies the bearer JWT and sets req.user.id and req.user.role.
  * Set MOCK_PAYMENT_MODE to success (default), decline, timeout or timeout-once to
  * demonstrate each payment outcome.
  */

@@ -3,6 +3,10 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const { mountAuthApi } = require("./authApi");
+const { errorHandler } = require("./errorHandler");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -462,11 +466,24 @@ async function startServer() {
         "MONGODB_URI is missing. Configure it in server/.env."
       );
     }
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET is missing from the server/.env file.");
+    }
 
     await mongoose.connect(mongoUri);
 
     console.log("MongoDB connected successfully.");
     console.log("Database:", mongoose.connection.name);
+
+    mountAuthApi({
+      app,
+      expressImpl: express,
+      mongooseImpl: mongoose,
+      jwtSecret: process.env.JWT_SECRET,
+      bcryptImpl: bcrypt,
+      jwtImpl: jwt
+    });
+    app.use(errorHandler);
 
     app.listen(PORT, () => {
       console.log(
