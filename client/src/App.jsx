@@ -1,11 +1,22 @@
-import { useCallback, useEffect, useState } from "react";
+
+import { useCallback, useEffect, useRef, useState } from "react";
 import "./App.css";
 import AuthDialog from "./components/AuthDialog.jsx";
 import { TOKEN_KEY } from "./api/authApi.js";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 const AUTH_EMAIL_KEY = "userEmail";
 const AUTH_ROLE_KEY = "userRole";
+const PAGE_SIZE = 20;
+
+const EMPTY_FORM = {
+  title: "",
+  author: "",
+  price: "",
+  category: "",
+  stock: "",
+};
 
 function App() {
   const [authUser, setAuthUser] = useState(() => {
@@ -18,70 +29,126 @@ function App() {
   });
   const [authDialogMode, setAuthDialogMode] = useState(null);
   const [books, setBooks] = useState([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: PAGE_SIZE,
+    totalBooks: 0,
+    totalPages: 0,
+    totalStock: 0,
+  });
+
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [search, setSearch] = useState("");
-
-  const emptyForm = {
-    title: "",
-    author: "",
-    price: "",
-    category: "",
-    stock: "",
-  };
-
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState(null);
 
-  const loadBooks = useCallback(async () => {
+  // BK-12: Individual book details.
+  const [selectedBook, setSelectedBook] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState("");
+
+  const titleInputRef = useRef(null);
+
+  // BK-10 + BK-11: Paginated catalog and backend search.
+  const loadBooks = useCallback(async (requestedPage = 1, searchTerm = "") => {
+    setRefreshing(true);
+
     try {
       setError("");
 
-      const response = await fetch(`${API_URL}/books`);
+      const params = new URLSearchParams({
+        page: String(requestedPage),
+        limit: String(PAGE_SIZE),
+        search: searchTerm.trim(),
+      });
+
+      const response = await fetch(`${API_URL}/books?${params}`);
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(data.message || "Could not load books.");
       }
 
-      if (!Array.isArray(data)) {
+      const catalog = Array.isArray(data) ? data : data.books;
+
+      if (!Array.isArray(catalog)) {
         throw new Error("Unexpected response from the bookstore API.");
       }
 
-      setBooks(data);
+      setBooks(
+        catalog.map((book) => ({
+          ...book,
+          stock: book.stock ?? book.stock_quantity ?? 0,
+          active: book.active ?? book.is_active ?? true,
+        }))
+      );
+
+      if (data.pagination) {
+        setPagination({
+          page: data.pagination.page ?? requestedPage,
+          limit: data.pagination.limit ?? PAGE_SIZE,
+          totalBooks: data.pagination.totalBooks ?? catalog.length,
+          totalPages: data.pagination.totalPages ?? 0,
+          totalStock: data.pagination.totalStock ?? 0,
+        });
+      } else {
+        setPagination({
+          page: 1,
+          limit: catalog.length,
+          totalBooks: catalog.length,
+          totalPages: catalog.length > 0 ? 1 : 0,
+          totalStock: catalog.reduce(
+            (sum, book) =>
+              sum + Number(book.stock ?? book.stock_quantity ?? 0),
+            0
+          ),
+        });
+      }
     } catch (err) {
       setError(
         err.message ||
-          "Cannot connect to the bookstore API. Check that your backend is running."
+          "Cannot connect to the bookstore API. Check that the backend is running."
       );
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
   useEffect(() => {
-    loadBooks();
-  }, [loadBooks]);
+    const timer = setTimeout(() => loadBooks(1, search), 300);
+    return () => clearTimeout(timer);
+  }, [loadBooks, search]);
 
   function handleChange(event) {
     const { name, value } = event.target;
-
-    setForm((previous) => ({
-      ...previous,
-      [name]: value,
-    }));
+    setForm((previous) => ({ ...previous, [name]: value }));
   }
 
   function resetForm() {
-    setForm(emptyForm);
+    setForm({ ...EMPTY_FORM });
     setEditingId(null);
   }
 
+  function handleAddButton() {
+    resetForm();
+    setError("");
+    setMessage("");
+
+    document
+      .getElementById("book-form")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    titleInputRef.current?.focus();
+  }
+
+  // Add or edit a book.
   async function handleSubmit(event) {
     event.preventDefault();
-
     if (saving) return;
 
     setError("");
@@ -101,83 +168,45 @@ function App() {
       !payload.category ||
       form.price.trim() === "" ||
       !Number.isFinite(payload.price) ||
-      payload.price <= 0 ||
+      payload.price < 0.01 ||
       form.stock.trim() === "" ||
       !Number.isInteger(payload.stock) ||
       payload.stock < 0
     ) {
       setError(
-        "Enter valid details. Price must be positive and stock must be a whole number of zero or more."
+        "Enter valid details. Price must be at least ₹0.01 and stock must be a whole number of zero or more."
       );
       return;
     }
 
     setSaving(true);
+    const isEditing = editingId !== null;
+    const url = isEditing
+      ? `${API_URL}/books/${editingId}`
+      : `${API_URL}/books`;
 
     try {
-      const isEditing = editingId !== null;
-
-      const url = isEditing
-        ? `${API_URL}/books/${editingId}`
-        : `${API_URL}/books`;
-
       const response = await fetch(url, {
         method: isEditing ? "PUT" : "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      const responseText = await response.text();
-      let result = {};
-
-      try {
-        result = responseText ? JSON.parse(responseText) : {};
-      } catch {
-        throw new Error(
-          `The server returned an unexpected response (HTTP ${response.status}).`
-        );
-      }
+      const result = await response.json();
 
       if (!response.ok) {
         throw new Error(
-          result.message ||
-            result.error ||
-            `Unable to ${isEditing ? "update" : "add"} book (HTTP ${response.status}).`
+          result.message || `Unable to ${isEditing ? "update" : "add"} book.`
         );
       }
 
-      // Reload the catalog before clearing the form.
-      const refreshResponse = await fetch(`${API_URL}/books`);
-
-      if (!refreshResponse.ok) {
-        throw new Error(
-          "The save request succeeded, but the catalog could not refresh. Click Refresh to check the saved data."
-        );
-      }
-
-      const refreshedBooks = await refreshResponse.json();
-
-      if (!Array.isArray(refreshedBooks)) {
-        throw new Error(
-          "The save request succeeded, but the server returned an invalid book list."
-        );
-      }
-
-      setBooks(refreshedBooks);
       setMessage(
-        isEditing
-          ? "Book updated successfully in the database."
-          : "Book added successfully to the database."
+        isEditing ? "Book updated successfully." : "Book added successfully."
       );
-
       resetForm();
+      await loadBooks(1, search);
     } catch (err) {
-      setError(
-        err.message ||
-          "Unable to save book. Check that the backend and MongoDB are running."
-      );
+      setError(err.message || "Unable to save the book.");
     } finally {
       setSaving(false);
     }
@@ -185,7 +214,6 @@ function App() {
 
   function startEditing(book) {
     setEditingId(book._id);
-
     setForm({
       title: book.title ?? "",
       author: book.author ?? "",
@@ -197,12 +225,14 @@ function App() {
     setMessage("");
     setError("");
 
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+    document
+      .getElementById("book-form")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    titleInputRef.current?.focus();
   }
 
+  // Update stock.
   async function updateStock(book) {
     const value = window.prompt(
       `Enter the new stock quantity for "${book.title}":`,
@@ -225,18 +255,11 @@ function App() {
     setMessage("");
 
     try {
-      const response = await fetch(
-        `${API_URL}/books/${book._id}/stock`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            stock: Number(value),
-          }),
-        }
-      );
+      const response = await fetch(`${API_URL}/books/${book._id}/stock`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stock: Number(value) }),
+      });
 
       const result = await response.json();
 
@@ -245,12 +268,13 @@ function App() {
       }
 
       setMessage("Stock updated successfully.");
-      await loadBooks();
+      await loadBooks(pagination.page, search);
     } catch (err) {
       setError(err.message || "Could not update stock.");
     }
   }
 
+  // Disable a book without deleting it.
   async function disableBook(book) {
     if (!window.confirm(`Disable "${book.title}"?`)) return;
 
@@ -260,9 +284,7 @@ function App() {
     try {
       const response = await fetch(
         `${API_URL}/books/${book._id}/disable`,
-        {
-          method: "PATCH",
-        }
+        { method: "PATCH" }
       );
 
       const result = await response.json();
@@ -272,24 +294,43 @@ function App() {
       }
 
       setMessage("Book disabled successfully.");
-      await loadBooks();
+      setSelectedBook(null);
+      await loadBooks(pagination.page, search);
     } catch (err) {
       setError(err.message || "Could not disable book.");
     }
   }
 
-  const filteredBooks = books.filter((book) => {
-    const text =
-      `${book.title} ${book.author} ${book.category}`.toLowerCase();
+  // BK-12: Load individual book details.
+  async function viewBookDetails(book) {
+    setSelectedBook(null);
+    setDetailError("");
+    setDetailLoading(true);
 
-    return text.includes(search.toLowerCase());
-  });
+    try {
+      const response = await fetch(`${API_URL}/books/${book._id}`);
+      const data = await response.json();
 
-  const activeBooks = books.filter((book) => book.active);
-  const totalStock = activeBooks.reduce(
-    (sum, book) => sum + Number(book.stock || 0),
-    0
-  );
+      if (!response.ok) {
+        throw new Error(data.message || "Could not load book details.");
+      }
+
+      const details = data.book ?? data;
+
+      setSelectedBook({
+        ...details,
+        stock: details.stock ?? details.stock_quantity ?? 0,
+        active: details.active ?? details.is_active ?? true,
+      });
+    } catch (err) {
+      setDetailError(err.message || "Could not load book details.");
+    } finally {
+      setDetailLoading(false);
+    }
+  }
+
+  const currentPage = pagination.page || 1;
+  const totalPages = pagination.totalPages || 0;
 
   function handleLogin(result, email) {
     if (typeof result?.token !== "string" || !result.token) {
@@ -358,14 +399,26 @@ function App() {
       )}
 
       <main className="container" id="home">
+        {/* BK-13: Catalog home section */}
         <section className="hero">
           <div>
             <p className="eyebrow">YOUR DIGITAL BOOKSTORE</p>
             <h1>Every book opens a new world.</h1>
             <p className="hero-description">
-              Manage your collection, update inventory, and keep your catalog
-              organized in one place.
+              Discover books, explore their details, and find your next read.
+              Manage your collection and inventory in one place.
             </p>
+            <button
+              className="primary-button"
+              type="button"
+              onClick={() =>
+                document
+                  .getElementById("catalog")
+                  ?.scrollIntoView({ behavior: "smooth" })
+              }
+            >
+              Explore the catalog
+            </button>
           </div>
 
           <div className="hero-decoration" aria-hidden="true">
@@ -378,34 +431,46 @@ function App() {
         <section className="stats">
           <article className="stat-card">
             <span>Active titles</span>
-            <strong>{activeBooks.length}</strong>
+            <strong>
+              {loading ? "…" : pagination.totalBooks.toLocaleString("en-IN")}
+            </strong>
           </article>
-
           <article className="stat-card">
             <span>Total stock</span>
-            <strong>{totalStock}</strong>
+            <strong>
+              {loading ? "…" : pagination.totalStock.toLocaleString("en-IN")}
+            </strong>
           </article>
-
           <article className="stat-card">
-            <span>All records</span>
-            <strong>{books.length}</strong>
+            <span>Catalog pages</span>
+            <strong>{loading ? "…" : totalPages}</strong>
           </article>
         </section>
 
         <section className="management-grid">
-          <section className="panel form-panel">
+          {/* Add/edit book form */}
+          <section className="panel form-panel" id="book-form">
             <div className="section-heading">
               <div>
                 <p className="eyebrow">CATALOG MANAGEMENT</p>
                 <h2>{editingId ? "Edit book" : "Add a new book"}</h2>
               </div>
-
-              <span className="heading-icon">+</span>
+              <button
+                className="heading-icon"
+                type="button"
+                aria-label="Add a new book"
+                title="Start adding a book"
+                onClick={handleAddButton}
+                disabled={saving}
+              >
+                +
+              </button>
             </div>
 
             <form onSubmit={handleSubmit}>
               <label htmlFor="title">Book title</label>
               <input
+                ref={titleInputRef}
                 id="title"
                 name="title"
                 placeholder="e.g. Atomic Habits"
@@ -439,7 +504,6 @@ function App() {
                     required
                   />
                 </div>
-
                 <div>
                   <label htmlFor="stock">Stock</label>
                   <input
@@ -466,11 +530,7 @@ function App() {
                 required
               />
 
-              <button
-                className="primary-button"
-                type="submit"
-                disabled={saving}
-              >
+              <button className="primary-button" type="submit" disabled={saving}>
                 {saving
                   ? "Saving..."
                   : editingId
@@ -491,19 +551,92 @@ function App() {
             </form>
           </section>
 
-          <section className="panel catalog-panel">
+          {/* BK-12: Book details */}
+          {(detailLoading || detailError || selectedBook) && (
+            <section className="panel book-detail-panel">
+              {detailLoading && <p>Loading book details...</p>}
+
+              {detailError && (
+                <p className="notice error-notice" role="alert">
+                  {detailError}
+                </p>
+              )}
+
+              {selectedBook && (
+                <>
+                  <div className="section-heading">
+                    <div>
+                      <p className="eyebrow">BOOK INFORMATION</p>
+                      <h2>{selectedBook.title}</h2>
+                    </div>
+                    <button
+                      className="refresh-button"
+                      type="button"
+                      onClick={() => {
+                        setSelectedBook(null);
+                        setDetailError("");
+                      }}
+                    >
+                      Back to catalog
+                    </button>
+                  </div>
+
+                  {selectedBook.cover_image && (
+                    <img
+                      src={selectedBook.cover_image}
+                      alt={`Cover of ${selectedBook.title}`}
+                      style={{
+                        width: "140px",
+                        maxHeight: "200px",
+                        objectFit: "cover",
+                        borderRadius: "8px",
+                        marginBottom: "16px",
+                      }}
+                    />
+                  )}
+
+                  <div className="book-detail-content">
+                    <p><strong>Author:</strong> {selectedBook.author}</p>
+                    <p><strong>Category:</strong> {selectedBook.category}</p>
+                    <p>
+                      <strong>Price:</strong>{" "}
+                      ₹{Number(selectedBook.price).toFixed(2)}
+                    </p>
+                    <p><strong>Stock:</strong> {selectedBook.stock}</p>
+                    <p>
+                      <strong>Availability:</strong>{" "}
+                      {Number(selectedBook.stock) <= 0
+                        ? "Out of stock"
+                        : "In stock"}
+                    </p>
+                    <p>
+                      <strong>Status:</strong>{" "}
+                      {selectedBook.active ? "Active" : "Disabled"}
+                    </p>
+                    <p>
+                      <strong>Description:</strong>{" "}
+                      {selectedBook.description || "No description available."}
+                    </p>
+                  </div>
+                </>
+              )}
+            </section>
+          )}
+
+          {/* BK-13: Catalog, search results, and book cards */}
+          <section className="panel catalog-panel" id="catalog">
             <div className="section-heading">
               <div>
                 <p className="eyebrow">YOUR COLLECTION</p>
                 <h2>Book catalog</h2>
               </div>
-
               <button
                 className="refresh-button"
                 type="button"
-                onClick={loadBooks}
+                onClick={() => loadBooks(currentPage, search)}
+                disabled={refreshing}
               >
-                Refresh
+                {refreshing ? "Refreshing..." : "Refresh"}
               </button>
             </div>
 
@@ -513,82 +646,132 @@ function App() {
               placeholder="Search title, author, or category..."
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              aria-label="Search books"
+              aria-label="Search books by title, author, or category"
             />
 
             {error && (
-              <p className="notice error-notice" role="alert">
-                {error}
-              </p>
+              <p className="notice error-notice" role="alert">{error}</p>
             )}
-
             {message && (
-              <p className="notice success-notice" role="status">
-                {message}
-              </p>
+              <p className="notice success-notice" role="status">{message}</p>
             )}
 
             {loading ? (
               <p className="empty-state">Loading books...</p>
-            ) : filteredBooks.length === 0 ? (
-              <p className="empty-state">No matching books found.</p>
+            ) : refreshing ? (
+              <p className="empty-state">Loading matching books...</p>
+            ) : books.length === 0 ? (
+              <p className="empty-state">
+                {search.trim()
+                  ? "No matching books found. Try another title, author, or category."
+                  : "No books found on this page."}
+              </p>
             ) : (
               <div className="book-list">
-                {filteredBooks.map((book) => (
-                  <article className="book-card" key={book._id}>
-                    <div className="book-cover" aria-hidden="true">
-                      {book.title.charAt(0).toUpperCase()}
-                    </div>
+                {books.map((book) => {
+                  const outOfStock = Number(book.stock) <= 0;
 
-                    <div className="book-details">
-                      <div className="book-title-row">
-                        <h3>{book.title}</h3>
-
-                        <span
-                          className={`status ${
-                            book.active ? "status-active" : "status-disabled"
-                          }`}
-                        >
-                          {book.active ? "Active" : "Disabled"}
-                        </span>
+                  return (
+                    <article className="book-card" key={book._id}>
+                      <div className="book-cover" aria-hidden="true">
+                        {book.title.charAt(0).toUpperCase()}
                       </div>
 
-                      <p className="book-author">by {book.author}</p>
-                      <p className="book-category">{book.category}</p>
-
-                      <div className="book-meta">
-                        <strong>₹{Number(book.price).toFixed(2)}</strong>
-                        <span>Stock: {book.stock}</span>
-                      </div>
-
-                      {book.active && (
-                        <div className="book-actions">
-                          <button
-                            type="button"
-                            onClick={() => startEditing(book)}
+                      <div className="book-details">
+                        <div className="book-title-row">
+                          <h3>{book.title}</h3>
+                          <span
+                            className={`status ${
+                              book.active
+                                ? "status-active"
+                                : "status-disabled"
+                            }`}
                           >
-                            Edit
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => updateStock(book)}
-                          >
-                            Update stock
-                          </button>
-
-                          <button
-                            type="button"
-                            className="disable-action"
-                            onClick={() => disableBook(book)}
-                          >
-                            Disable
-                          </button>
+                            {book.active ? "Active" : "Disabled"}
+                          </span>
                         </div>
-                      )}
-                    </div>
-                  </article>
-                ))}
+
+                        <p className="book-author">by {book.author}</p>
+                        <p className="book-category">{book.category}</p>
+
+                        {/* BK-13: Clear stock availability label */}
+                        <p
+                          className={`stock-availability ${
+                            outOfStock ? "out-of-stock" : "in-stock"
+                          }`}
+                          role="status"
+                        >
+                          {outOfStock
+                            ? "Out of stock"
+                            : `In stock · ${book.stock} available`}
+                        </p>
+
+                        <div className="book-meta">
+                          <strong>₹{Number(book.price).toFixed(2)}</strong>
+                          <span>Stock: {book.stock}</span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => viewBookDetails(book)}
+                        >
+                          View Details
+                        </button>
+
+                        {book.active && (
+                          <div className="book-actions">
+                            <button
+                              type="button"
+                              onClick={() => startEditing(book)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => updateStock(book)}
+                            >
+                              Update stock
+                            </button>
+                            <button
+                              type="button"
+                              className="disable-action"
+                              onClick={() => disableBook(book)}
+                            >
+                              Disable
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* BK-10: Pagination */}
+            {totalPages > 1 && (
+              <div className="pagination-controls">
+                <button
+                  className="refresh-button"
+                  type="button"
+                  disabled={refreshing || currentPage <= 1}
+                  onClick={() => loadBooks(currentPage - 1, search)}
+                >
+                  Previous
+                </button>
+                <span>
+                  Page {currentPage} of {totalPages}
+                  {" · "}
+                  {pagination.totalBooks.toLocaleString("en-IN")} books
+                </span>
+                <button
+                  className="refresh-button"
+                  type="button"
+                  disabled={refreshing || currentPage >= totalPages}
+                  onClick={() => loadBooks(currentPage + 1, search)}
+                >
+                  Next
+                </button>
               </div>
             )}
           </section>
