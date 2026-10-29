@@ -3,12 +3,18 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const helmet = require("helmet");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { mountAuthApi } = require("./authApi");
 const { errorHandler } = require("./errorHandler");
+const { requestLogger } = require("./requestLogger");
 const { createCartCheckoutRouter } = require("../backend/routes/cartCheckoutModule");
 const { createRequireRoleMiddleware } = require("../backend/middleware/requireRole");
+const { sanitizeInput, sanitizeQuery } = require("../backend/middleware/sanitizeInput");
+const { validateText, INPUT_LIMITS } = require("../backend/utils/validators");
+const { isValidPrice } = require("../backend/utils/inputLimits");
+const AppError = require("../backend/utils/AppError");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -38,11 +44,21 @@ const bookSchema = new mongoose.Schema(
       type: Number,
       required: true,
       min: 0,
+      max: 99999999.99,
+      validate: {
+        validator: isValidPrice,
+        message: "price must have at most two decimal places",
+      },
     },
     stock_quantity: {
       type: Number,
       required: true,
       min: 0,
+      max: 999999,
+      validate: {
+        validator: Number.isInteger,
+        message: "stock_quantity must be a whole number",
+      },
       default: 0,
     },
     description: {
@@ -70,8 +86,12 @@ const bookSchema = new mongoose.Schema(
 const Book =
   mongoose.models.Book || mongoose.model("Book", bookSchema);
 
+app.use(helmet());
+app.use(requestLogger);
 app.use(cors());
-app.use(express.json());
+app.set("query parser", sanitizeQuery);
+app.use(express.json({ limit: "32kb" }));
+app.use(sanitizeInput);
 
 // Home route
 app.get("/", (req, res) => {
@@ -81,18 +101,22 @@ app.get("/", (req, res) => {
 });
 
 // Health check
-app.get("/api/health", (req, res) => {
+app.get("/api/health", (req, res, next) => {
   const connected = mongoose.connection.readyState === 1;
 
-  res.status(connected ? 200 : 503).json({
-    status: connected ? "OK" : "Disconnected",
+  if (!connected) {
+    return next(new AppError(503, "SERVICE_UNAVAILABLE", "Database is disconnected."));
+  }
+
+  res.json({
+    status: "OK",
     application: "Online Bookstore",
-    database: connected ? "Connected" : "Disconnected",
+    database: "Connected",
   });
 });
 
 // BK-10 + BK-11: Browse, paginate, and search books.
-app.get("/api/books", async (req, res) => {
+app.get("/api/books", async (req, res, next) => {
   try {
     const parsePositiveInteger = (value) => {
       if (
@@ -117,35 +141,27 @@ app.get("/api/books", async (req, res) => {
         : parsePositiveInteger(req.query.limit);
 
     if (page === null || requestedLimit === null) {
-      return res.status(400).json({
-        message: "Page and limit must be positive integers.",
-      });
+      throw new AppError(400, "BAD_REQUEST", "Page and limit must be positive integers.");
     }
 
     if (
       req.query.search !== undefined &&
       typeof req.query.search !== "string"
     ) {
-      return res.status(400).json({
-        message: "Search must be a single text value.",
-      });
+      throw new AppError(400, "BAD_REQUEST", "Search must be a single text value.");
     }
 
     const search = (req.query.search || "").trim();
 
     if (search.length > 100) {
-      return res.status(400).json({
-        message: "Search must be 100 characters or fewer.",
-      });
+      throw new AppError(400, "BAD_REQUEST", "Search must be 100 characters or fewer.");
     }
 
     const limit = Math.min(requestedLimit, 50);
     const skip = (page - 1) * limit;
 
     if (!Number.isSafeInteger(skip)) {
-      return res.status(400).json({
-        message: "Requested page is too large.",
-      });
+      throw new AppError(400, "BAD_REQUEST", "Requested page is too large.");
     }
 
     const filter = { is_active: true };
@@ -201,23 +217,17 @@ app.get("/api/books", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching books:", error);
-
-    return res.status(500).json({
-      message: "Failed to fetch books.",
-    });
+    return next(error);
   }
 });
 
 // BK-12: Get one active book by MongoDB ID.
-app.get("/api/books/:id", async (req, res) => {
+app.get("/api/books/:id", async (req, res, next) => {
   try {
     const { id } = req.params;
 
     if (!mongoose.isValidObjectId(id)) {
-      return res.status(400).json({
-        message: "Invalid book ID.",
-      });
+      throw new AppError(400, "BAD_REQUEST", "Invalid book ID.");
     }
 
     const book = await Book.findOne({
@@ -226,9 +236,7 @@ app.get("/api/books/:id", async (req, res) => {
     }).lean();
 
     if (!book) {
-      return res.status(404).json({
-        message: "Book not found.",
-      });
+      throw new AppError(404, "NOT_FOUND", "Book not found.");
     }
 
     return res.status(200).json({
@@ -239,43 +247,35 @@ app.get("/api/books/:id", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching book details:", error);
-
-    return res.status(500).json({
-      message: "Failed to fetch book details.",
-    });
+    return next(error);
   }
 });
 
 // Add a new book.
-app.post("/api/books", async (req, res) => {
+app.post("/api/books", async (req, res, next) => {
   try {
-    const { title, author, price, category, stock } = req.body;
+    const { title, author, price, category, stock } = req.body || {};
+    const cleanTitle = validateText(title, "title", INPUT_LIMITS.title);
+    const cleanAuthor = validateText(author, "author", INPUT_LIMITS.author);
+    const cleanCategory = validateText(category, "category", INPUT_LIMITS.category);
 
     if (
-      typeof title !== "string" ||
-      !title.trim() ||
-      typeof author !== "string" ||
-      !author.trim() ||
-      typeof category !== "string" ||
-      !category.trim() ||
       typeof price !== "number" ||
-      !Number.isFinite(price) ||
+      !isValidPrice(price) ||
       price < 0.01 ||
+      price > INPUT_LIMITS.price ||
       !Number.isInteger(stock) ||
-      stock < 0
+      stock < 0 ||
+      stock > INPUT_LIMITS.stock
     ) {
-      return res.status(400).json({
-        message:
-          "Enter a valid title, author, category, price of at least 0.01, and non-negative whole-number stock.",
-      });
+      throw new AppError(422, "VALIDATION_ERROR", "Book price or stock is outside the permitted range.");
     }
 
     const book = await Book.create({
-      title: title.trim(),
-      author: author.trim(),
+      title: cleanTitle,
+      author: cleanAuthor,
       price,
-      category: category.trim(),
+      category: cleanCategory,
       stock_quantity: stock,
       is_active: true,
     });
@@ -289,55 +289,41 @@ app.post("/api/books", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error adding book:", error);
-
     if (error.name === "ValidationError") {
-      return res.status(400).json({
-        message: "Book data failed validation.",
-      });
+      return next(new AppError(422, "VALIDATION_ERROR", "Book data failed validation."));
     }
-
-    return res.status(500).json({
-      message: "Failed to add book.",
-    });
+    return next(error);
   }
 });
 
 // Edit book details.
-app.put("/api/books/:id", async (req, res) => {
+app.put("/api/books/:id", async (req, res, next) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) {
-      return res.status(400).json({
-        message: "Invalid book ID.",
-      });
+      throw new AppError(400, "BAD_REQUEST", "Invalid book ID.");
     }
 
-    const { title, author, price, category } = req.body;
+    const { title, author, price, category } = req.body || {};
+    const cleanTitle = validateText(title, "title", INPUT_LIMITS.title);
+    const cleanAuthor = validateText(author, "author", INPUT_LIMITS.author);
+    const cleanCategory = validateText(category, "category", INPUT_LIMITS.category);
 
     if (
-      typeof title !== "string" ||
-      !title.trim() ||
-      typeof author !== "string" ||
-      !author.trim() ||
-      typeof category !== "string" ||
-      !category.trim() ||
       typeof price !== "number" ||
-      !Number.isFinite(price) ||
-      price < 0.01
+      !isValidPrice(price) ||
+      price < 0.01 ||
+      price > INPUT_LIMITS.price
     ) {
-      return res.status(400).json({
-        message:
-          "Enter a valid title, author, category, and price of at least 0.01.",
-      });
+      throw new AppError(422, "VALIDATION_ERROR", "Book price is outside the permitted range.");
     }
 
     const book = await Book.findOneAndUpdate(
       { _id: req.params.id, is_active: true },
       {
-        title: title.trim(),
-        author: author.trim(),
+        title: cleanTitle,
+        author: cleanAuthor,
         price,
-        category: category.trim(),
+        category: cleanCategory,
       },
       {
         new: true,
@@ -346,9 +332,7 @@ app.put("/api/books/:id", async (req, res) => {
     );
 
     if (!book) {
-      return res.status(404).json({
-        message: "Book not found.",
-      });
+      throw new AppError(404, "NOT_FOUND", "Book not found.");
     }
 
     return res.json({
@@ -360,29 +344,21 @@ app.put("/api/books/:id", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error updating book:", error);
-
-    return res.status(500).json({
-      message: "Failed to update book.",
-    });
+    return next(error);
   }
 });
 
 // Update stock.
-app.patch("/api/books/:id/stock", async (req, res) => {
+app.patch("/api/books/:id/stock", async (req, res, next) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) {
-      return res.status(400).json({
-        message: "Invalid book ID.",
-      });
+      throw new AppError(400, "BAD_REQUEST", "Invalid book ID.");
     }
 
-    const { stock } = req.body;
+    const { stock } = req.body || {};
 
-    if (!Number.isInteger(stock) || stock < 0) {
-      return res.status(400).json({
-        message: "Stock must be a non-negative whole number.",
-      });
+    if (!Number.isInteger(stock) || stock < 0 || stock > INPUT_LIMITS.stock) {
+      throw new AppError(422, "VALIDATION_ERROR", "Stock must be a whole number from 0 to 999999.");
     }
 
     const book = await Book.findOneAndUpdate(
@@ -395,9 +371,7 @@ app.patch("/api/books/:id/stock", async (req, res) => {
     );
 
     if (!book) {
-      return res.status(404).json({
-        message: "Book not found.",
-      });
+      throw new AppError(404, "NOT_FOUND", "Book not found.");
     }
 
     return res.json({
@@ -409,21 +383,15 @@ app.patch("/api/books/:id/stock", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error updating stock:", error);
-
-    return res.status(500).json({
-      message: "Failed to update stock.",
-    });
+    return next(error);
   }
 });
 
 // Disable a book without deleting it.
-app.patch("/api/books/:id/disable", async (req, res) => {
+app.patch("/api/books/:id/disable", async (req, res, next) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) {
-      return res.status(400).json({
-        message: "Invalid book ID.",
-      });
+      throw new AppError(400, "BAD_REQUEST", "Invalid book ID.");
     }
 
     const book = await Book.findByIdAndUpdate(
@@ -436,9 +404,7 @@ app.patch("/api/books/:id/disable", async (req, res) => {
     );
 
     if (!book) {
-      return res.status(404).json({
-        message: "Book not found.",
-      });
+      throw new AppError(404, "NOT_FOUND", "Book not found.");
     }
 
     return res.json({
@@ -450,11 +416,7 @@ app.patch("/api/books/:id/disable", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error disabling book:", error);
-
-    return res.status(500).json({
-      message: "Failed to disable book.",
-    });
+    return next(error);
   }
 });
 
@@ -500,6 +462,9 @@ async function startServer() {
         mongooseImpl: mongoose,
       })
     );
+    app.use((req, res, next) => {
+      next(new AppError(404, "NOT_FOUND", "Resource not found."));
+    });
     app.use(errorHandler);
 
     app.listen(PORT, () => {
