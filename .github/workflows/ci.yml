@@ -37,6 +37,9 @@ jobs:
       - name: Run Oxlint
         run: npm run lint
 
+      - name: Run client tests (cart, checkout, orders)
+        run: npm test
+
       - name: Build React application
         run: npm run build
 
@@ -67,3 +70,28 @@ jobs:
 
       - name: Check backend syntax
         run: node --check index.js
+
+  backend-modules:
+    name: Backend module tests (auth, cart, checkout, orders)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend module dependencies
+        run: npm ci
+
+      - name: Run Jest tests
+        run: npm test
