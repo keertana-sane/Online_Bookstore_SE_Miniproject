@@ -451,14 +451,20 @@ async function startServer() {
     // Cart, checkout and orders (API-05 to API-12) are for logged-in CUSTOMERs only:
     // a valid token is checked first, then the role (staff accounts get 403).
     const requireCustomer = createRequireRoleMiddleware("CUSTOMER");
+    const requireAdmin = createRequireRoleMiddleware("ADMIN_STAFF");
     const authenticateCustomer = (req, res, next) =>
       authenticate(req, res, (err) =>
         err ? next(err) : requireCustomer(req, res, next)
+      );
+    const authenticateAdmin = (req, res, next) =>
+      authenticate(req, res, (err) =>
+        err ? next(err) : requireAdmin(req, res, next)
       );
     app.use(
       "/api/v1",
       createCartCheckoutRouter({
         authenticate: authenticateCustomer,
+        authenticateAdmin,
         mongooseImpl: mongoose,
       })
     );

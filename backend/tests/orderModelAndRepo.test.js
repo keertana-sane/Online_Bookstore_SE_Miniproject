@@ -147,6 +147,37 @@ describe('order repository queries (ownership and atomic cancel)', () => {
     expect(Order.calls.findOneAndUpdate).toBeUndefined();
   });
 
+  test('admin listing can filter confirmed orders by status', async () => {
+    const Order = fakeModel();
+    await createOrderRepository(Order).listAll('PROCESSING');
+    expect(Order.calls.find[0]).toEqual({ paymentStatus: 'SUCCESS', orderStatus: 'PROCESSING' });
+  });
+
+  test('admin status update is one conditional update on current status without an order owner', async () => {
+    const Order = fakeModel();
+    const entry = { actor: 'admin-id', at: new Date() };
+    await createOrderRepository(Order).transitionStatusForAdmin(
+      ORDER_ID,
+      'PLACED',
+      'PROCESSING',
+      entry
+    );
+
+    const [filter, update, options] = Order.calls.findOneAndUpdate;
+    expect(filter).toEqual({
+      _id: ORDER_ID,
+      paymentStatus: 'SUCCESS',
+      orderStatus: 'PLACED'
+    });
+    expect(update.$set).toEqual({ orderStatus: 'PROCESSING' });
+    expect(update.$push.statusHistory).toMatchObject({
+      ...entry,
+      previousStatus: 'PLACED',
+      newStatus: 'PROCESSING'
+    });
+    expect(options).toEqual({ new: true });
+  });
+
   test('cancel is one conditional update on owner AND current status', async () => {
     const Order = fakeModel();
     const entry = { status: 'CANCELLED', actor: CUSTOMER, at: new Date() };

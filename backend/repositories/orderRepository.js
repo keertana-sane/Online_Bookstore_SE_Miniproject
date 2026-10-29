@@ -61,6 +61,20 @@ function createOrderRepository(Order) {
     return docs.map(toDomain);
   }
 
+  /** Confirmed orders for administrators, optionally filtered by status. */
+  async function listAll(status) {
+    const filter = { ...CONFIRMED };
+    if (status !== undefined) filter.orderStatus = status;
+    const docs = await Order.find(filter).sort({ createdAt: -1, _id: -1 }).lean();
+    return docs.map(toDomain);
+  }
+
+  /** One confirmed order for an administrator. */
+  async function findById(orderId) {
+    if (!isObjectId(orderId)) return null;
+    return toDomain(await Order.findOne({ _id: orderId, ...CONFIRMED }).lean());
+  }
+
   /** One confirmed order, only if it belongs to this customer; otherwise null. */
   async function findByIdForCustomer(customerId, orderId) {
     if (!isObjectId(orderId)) return null;
@@ -96,7 +110,40 @@ function createOrderRepository(Order) {
     return toDomain(doc);
   }
 
-  return { create, findByCustomerAndKey, listByCustomer, findByIdForCustomer, transitionStatus };
+  async function transitionStatusForAdmin(orderId, fromStatus, toStatus, historyEntry) {
+    try {
+      assertOrderStatusTransition(fromStatus, toStatus);
+    } catch (err) {
+      if (err.code === 'INVALID_ORDER_STATUS_TRANSITION') {
+        throw new AppError(409, err.code, err.message);
+      }
+      throw err;
+    }
+    if (!isObjectId(orderId)) return null;
+    const completeHistoryEntry = {
+      ...historyEntry,
+      status: toStatus,
+      previousStatus: fromStatus,
+      newStatus: toStatus
+    };
+    const doc = await Order.findOneAndUpdate(
+      { _id: orderId, ...CONFIRMED, orderStatus: fromStatus },
+      { $set: { orderStatus: toStatus }, $push: { statusHistory: completeHistoryEntry } },
+      { new: true }
+    ).lean();
+    return toDomain(doc);
+  }
+
+  return {
+    create,
+    findByCustomerAndKey,
+    listByCustomer,
+    listAll,
+    findById,
+    findByIdForCustomer,
+    transitionStatus,
+    transitionStatusForAdmin
+  };
 }
 
 module.exports = { createOrderRepository };

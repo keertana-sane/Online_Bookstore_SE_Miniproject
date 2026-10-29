@@ -1,3 +1,6 @@
+const AppError = require('../../utils/AppError');
+const { assertOrderStatusTransition } = require('../../services/orderStatusMachine');
+
 /**
  * In-memory stand-ins for the Mongo repositories, used by the unit tests so the
  * business rules (cart totals, stock reservation, idempotent checkout) can be
@@ -61,7 +64,8 @@ function createFakeOrderRepo() {
       ) {
         throw duplicate('idempotencyKey');
       }
-      const order = { id: `order-${orders.length + 1}`, createdAt: new Date(), ...data };
+      const id = (orders.length + 1).toString(16).padStart(24, '0');
+      const order = { id, createdAt: new Date(), ...data };
       orders.push(order);
       return { ...order };
     },
@@ -77,6 +81,17 @@ function createFakeOrderRepo() {
         .sort((a, b) => b.o.createdAt - a.o.createdAt || b.index - a.index)
         .map(({ o }) => ({ ...o }));
     },
+    async listAll(status) {
+      return orders
+        .map((o, index) => ({ o, index }))
+        .filter(({ o }) => o.paymentStatus === 'SUCCESS' && (status === undefined || o.orderStatus === status))
+        .sort((a, b) => b.o.createdAt - a.o.createdAt || b.index - a.index)
+        .map(({ o }) => ({ ...o }));
+    },
+    async findById(orderId) {
+      const o = orders.find((x) => x.id === orderId && x.paymentStatus === 'SUCCESS');
+      return o ? { ...o, statusHistory: [...(o.statusHistory || [])] } : null;
+    },
     async findByIdForCustomer(customerId, orderId) {
       const o = orders.find(
         (x) => x.id === orderId && x.customerId === customerId && x.paymentStatus === 'SUCCESS'
@@ -90,6 +105,23 @@ function createFakeOrderRepo() {
           x.customerId === customerId &&
           x.paymentStatus === 'SUCCESS' &&
           x.orderStatus === fromStatus
+      );
+      if (!o) return null;
+      o.orderStatus = toStatus;
+      o.statusHistory = [
+        ...(o.statusHistory || []),
+        { ...historyEntry, status: toStatus, previousStatus: fromStatus, newStatus: toStatus }
+      ];
+      return { ...o };
+    },
+    async transitionStatusForAdmin(orderId, fromStatus, toStatus, historyEntry) {
+      try {
+        assertOrderStatusTransition(fromStatus, toStatus);
+      } catch (err) {
+        throw new AppError(409, err.code, err.message);
+      }
+      const o = orders.find(
+        (x) => x.id === orderId && x.paymentStatus === 'SUCCESS' && x.orderStatus === fromStatus
       );
       if (!o) return null;
       o.orderStatus = toStatus;

@@ -1,7 +1,8 @@
 const crypto = require('crypto');
 const AppError = require('../utils/AppError');
 const { toCents, fromCents } = require('../utils/money');
-const { validateText, validationError } = require('../utils/validators');
+const { isObjectId, validateText, validationError } = require('../utils/validators');
+const { ORDER_STATUSES } = require('../models/Order');
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_ADDRESS = 300; // SRS Appendix B: shipping_address length 300
@@ -287,7 +288,41 @@ function createOrderService({
     return toDetail(cancelled);
   }
 
-  return { placeOrder, listOrders, getOrder, cancelOrder };
+  async function listAdminOrders(status) {
+    if (status !== undefined && !ORDER_STATUSES.includes(status)) {
+      throw validationError('status', 'status must be one of ' + ORDER_STATUSES.join(', '));
+    }
+    const orders = await orderRepo.listAll(status);
+    return { orders: orders.map(toSummary) };
+  }
+
+  async function updateAdminOrderStatus(actorId, orderId, status) {
+    if (!isObjectId(orderId)) {
+      throw validationError('orderId', 'orderId must be a valid id');
+    }
+    if (!ORDER_STATUSES.includes(status)) {
+      throw validationError('status', 'status must be one of ' + ORDER_STATUSES.join(', '));
+    }
+
+    const order = await orderRepo.findById(orderId);
+    if (!order) throw new AppError(404, 'ORDER_NOT_FOUND', 'Order not found');
+
+    const updated = await orderRepo.transitionStatusForAdmin(orderId, order.orderStatus, status, {
+      actor: String(actorId),
+      at: now()
+    });
+    if (!updated) {
+      const current = await orderRepo.findById(orderId);
+      throw new AppError(
+        409,
+        'INVALID_ORDER_STATUS_TRANSITION',
+        `Invalid order status transition: ${current ? current.orderStatus : order.orderStatus} -> ${status}`
+      );
+    }
+    return toDetail(updated);
+  }
+
+  return { placeOrder, listOrders, getOrder, cancelOrder, listAdminOrders, updateAdminOrderStatus };
 }
 
 module.exports = { createOrderService, toResponse, toSummary, toDetail };
