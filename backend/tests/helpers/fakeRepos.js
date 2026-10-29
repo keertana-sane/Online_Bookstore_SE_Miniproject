@@ -93,7 +93,10 @@ function createFakeOrderRepo() {
       );
       if (!o) return null;
       o.orderStatus = toStatus;
-      o.statusHistory = [...(o.statusHistory || []), historyEntry];
+      o.statusHistory = [
+        ...(o.statusHistory || []),
+        { ...historyEntry, status: toStatus, previousStatus: fromStatus, newStatus: toStatus }
+      ];
       return { ...o };
     }
   };

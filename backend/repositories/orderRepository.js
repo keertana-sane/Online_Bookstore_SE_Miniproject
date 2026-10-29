@@ -1,4 +1,5 @@
 const { isObjectId } = require('../utils/validators');
+const AppError = require('../utils/AppError');
 const { assertOrderStatusTransition } = require('../services/orderStatusMachine');
 
 function toDomain(doc) {
@@ -72,11 +73,24 @@ function createOrderRepository(Order) {
    * customer's or is no longer in `fromStatus` (someone else changed it first).
    */
   async function transitionStatus(customerId, orderId, fromStatus, toStatus, historyEntry) {
-    assertOrderStatusTransition(fromStatus, toStatus);
+    try {
+      assertOrderStatusTransition(fromStatus, toStatus);
+    } catch (err) {
+      if (err.code === 'INVALID_ORDER_STATUS_TRANSITION') {
+        throw new AppError(409, err.code, err.message);
+      }
+      throw err;
+    }
     if (!isObjectId(orderId)) return null;
+    const completeHistoryEntry = {
+      ...historyEntry,
+      status: toStatus,
+      previousStatus: fromStatus,
+      newStatus: toStatus
+    };
     const doc = await Order.findOneAndUpdate(
       { _id: orderId, customerId, ...CONFIRMED, orderStatus: fromStatus },
-      { $set: { orderStatus: toStatus }, $push: { statusHistory: historyEntry } },
+      { $set: { orderStatus: toStatus }, $push: { statusHistory: completeHistoryEntry } },
       { new: true }
     ).lean();
     return toDomain(doc);

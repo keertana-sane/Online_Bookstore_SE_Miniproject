@@ -23,6 +23,8 @@ function createOrderModel(mongoose) {
   const statusHistorySchema = new mongoose.Schema(
     {
       status: { type: String, enum: ORDER_STATUSES, required: true },
+      previousStatus: { type: String, enum: ORDER_STATUSES },
+      newStatus: { type: String, enum: ORDER_STATUSES },
       actor: { type: String, required: true }, // customer id, staff id or "system"
       at: { type: Date, required: true }
     },

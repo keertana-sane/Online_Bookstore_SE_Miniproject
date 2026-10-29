@@ -128,6 +128,16 @@ describe('order repository queries (ownership and atomic cancel)', () => {
     });
   });
 
+  test('an invalid status transition is returned as HTTP conflict', async () => {
+    const repo = createOrderRepository(fakeModel());
+    await expect(
+      repo.transitionStatus(CUSTOMER, ORDER_ID, 'DELIVERED', 'PROCESSING', {})
+    ).rejects.toMatchObject({
+      status: 409,
+      code: 'INVALID_ORDER_STATUS_TRANSITION'
+    });
+  });
+
   test('a malformed order id never reaches the database', async () => {
     const Order = fakeModel();
     const repo = createOrderRepository(Order);
@@ -149,7 +159,16 @@ describe('order repository queries (ownership and atomic cancel)', () => {
       paymentStatus: 'SUCCESS',
       orderStatus: 'PLACED'
     });
-    expect(update).toEqual({ $set: { orderStatus: 'CANCELLED' }, $push: { statusHistory: entry } });
+    expect(update).toEqual({
+      $set: { orderStatus: 'CANCELLED' },
+      $push: {
+        statusHistory: {
+          ...entry,
+          previousStatus: 'PLACED',
+          newStatus: 'CANCELLED'
+        }
+      }
+    });
     expect(options).toEqual({ new: true });
   });
 });

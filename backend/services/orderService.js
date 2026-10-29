@@ -49,6 +49,8 @@ function toDetail(order) {
     shippingAddress: order.shippingAddress,
     statusHistory: order.statusHistory.map((h) => ({
       status: h.status,
+      previousStatus: h.previousStatus,
+      newStatus: h.newStatus,
       at: h.at,
       by: h.actor === 'system' ? 'system' : h.actor === order.customerId ? 'you' : 'staff'
     }))
@@ -256,21 +258,28 @@ function createOrderService({
    */
   async function cancelOrder(customerId, orderId) {
     const order = await findOwnOrder(customerId, orderId);
-    const notAllowed = () =>
+    const invalidTransition = () =>
       new AppError(
         409,
-        'CANCEL_NOT_ALLOWED',
-        'Only an order that is still PLACED can be cancelled',
+        'INVALID_ORDER_STATUS_TRANSITION',
+        `Invalid order status transition: ${order.orderStatus} -> CANCELLED`,
         [{ orderStatus: order.orderStatus }]
       );
-    if (order.orderStatus !== 'PLACED') throw notAllowed();
+    if (order.orderStatus !== 'PLACED') throw invalidTransition();
 
     const cancelled = await orderRepo.transitionStatus(customerId, orderId, 'PLACED', 'CANCELLED', {
       status: 'CANCELLED',
       actor: customerId,
       at: now()
     });
-    if (!cancelled) throw notAllowed(); // lost the race: already cancelled or moved on
+    if (!cancelled) {
+      throw new AppError(
+        409,
+        'CANCEL_NOT_ALLOWED',
+        'Only an order that is still PLACED can be cancelled',
+        [{ orderStatus: 'PLACED' }]
+      );
+    } // lost the race: already cancelled or moved on
 
     for (const item of order.items) {
       await bookRepo.releaseStock(item.bookId, item.quantity); // restore reserved stock
