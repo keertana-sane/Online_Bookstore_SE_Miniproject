@@ -152,4 +152,56 @@ describe('admin order API (FR-015)', () => {
       .send({ status: 'PROCESSING' })
       .expect(401);
   });
+
+  test('rejects missing, empty, and malformed status payloads', async () => {
+    const ctx = setup();
+    const placed = await placeOrder(ctx);
+    const url = `/api/v1/admin/orders/${placed.orderId}/status`;
+
+    await request(ctx.app).patch(url).set(admin).expect(422);
+    await request(ctx.app).patch(url).set(admin).send({ status: '' }).expect(422);
+    await request(ctx.app).patch(url).set(admin).send({ status: null }).expect(422);
+    await request(ctx.app).patch(url).set(admin).send({ status: { value: 'PROCESSING' } }).expect(422);
+  });
+
+  test('rejects invalid order ids before repository lookup', async () => {
+    const ctx = setup();
+    await request(ctx.app)
+      .patch('/api/v1/admin/orders/not-an-object-id/status')
+      .set(admin)
+      .send({ status: 'PROCESSING' })
+      .expect(422);
+  });
+
+  test('rejects invalid status filters', async () => {
+    const ctx = setup();
+    const response = await request(ctx.app)
+      .get('/api/v1/admin/orders?status=SHIPPING')
+      .set(admin)
+      .expect(422);
+    expect(response.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  test('supports the documented forward lifecycle transitions', async () => {
+    const ctx = setup();
+    const placed = await placeOrder(ctx);
+    let url = `/api/v1/admin/orders/${placed.orderId}/status`;
+
+    for (const status of ['PROCESSING', 'SHIPPED', 'DELIVERED']) {
+      const response = await request(ctx.app).patch(url).set(admin).send({ status }).expect(200);
+      expect(response.body.orderStatus).toBe(status);
+    }
+
+    expect(ctx.orderRepo.orders[0].statusHistory.at(-1)).toMatchObject({
+      previousStatus: 'SHIPPED',
+      newStatus: 'DELIVERED',
+      actor: ADMIN
+    });
+  });
+
+  test('customer cannot list or filter admin orders, including malformed queries', async () => {
+    const ctx = setup();
+    await request(ctx.app).get('/api/v1/admin/orders').set(customer).expect(403);
+    await request(ctx.app).get('/api/v1/admin/orders?status=SHIPPING').set(customer).expect(403);
+  });
 });

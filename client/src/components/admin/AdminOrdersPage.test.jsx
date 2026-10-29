@@ -67,4 +67,45 @@ describe("AdminOrdersPage", () => {
     render(<AdminOrdersPage api={fakeApi({ orders: [] })} />);
     expect(await screen.findByText("No orders found")).toBeInTheDocument();
   });
+
+  it("shows loading and then terminal-status information", async () => {
+    const pending = {};
+    pending.promise = new Promise((resolve) => { pending.resolve = resolve; });
+    const api = {
+      listAdminOrders: vi.fn(() => pending.promise),
+      updateAdminOrderStatus: vi.fn(),
+    };
+    render(<AdminOrdersPage api={api} />);
+    expect(screen.getByRole("status")).toHaveTextContent("Loading orders");
+
+    pending.resolve({ orders: [order('DELIVERED')] });
+    expect(await screen.findByText("No further status changes")).toBeInTheDocument();
+  });
+
+  it("shows list API failures and keeps unauthorized handling out of the customer UI", async () => {
+    const onUnauthorized = vi.fn();
+    const api = fakeApi();
+    api.listAdminOrders = vi.fn(async () => {
+      throw new ApiError(403, 'FORBIDDEN', 'Administrator access required');
+    });
+    render(<AdminOrdersPage api={api} onUnauthorized={onUnauthorized} />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Administrator access required");
+    expect(onUnauthorized).not.toHaveBeenCalled();
+  });
+
+  it("logs out when an update returns unauthenticated", async () => {
+    const onUnauthorized = vi.fn();
+    const api = fakeApi({
+      updateError: new ApiError(401, 'UNAUTHORIZED', 'Login required'),
+    });
+    render(<AdminOrdersPage api={api} onUnauthorized={onUnauthorized} />);
+    await screen.findByText("ORD-20261029-00000001");
+
+    await userEvent.selectOptions(
+      screen.getByLabelText("Update status for order ORD-20261029-00000001"),
+      "PROCESSING",
+    );
+    await waitFor(() => expect(onUnauthorized).toHaveBeenCalledTimes(1));
+  });
 });

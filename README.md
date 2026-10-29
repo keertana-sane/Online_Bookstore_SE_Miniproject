@@ -89,3 +89,24 @@ If Docker is unavailable, syntax can be checked with `docker compose config` on 
 ## Local development
 
 See [SETUP.md](SETUP.md) for registration, authentication, database seeding, and local non-Docker setup.
+
+## Test suite
+
+Run the deterministic unit and HTTP suites from their respective directories:
+
+```powershell
+Set-Location backend
+npm test
+npm run lint
+
+Set-Location ../server
+npm test
+npm run lint
+
+Set-Location ../client
+npm test
+npm run lint
+npm run build
+```
+
+The admin API tests use an in-memory fake repository and mocked authentication; no Docker, production credentials, or real customer data are required. Frontend admin tests use mocked API responses and do not access the network.
