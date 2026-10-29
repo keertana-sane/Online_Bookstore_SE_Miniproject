@@ -7,6 +7,8 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { mountAuthApi } = require("./authApi");
 const { errorHandler } = require("./errorHandler");
+const { createCartCheckoutRouter } = require("../backend/routes/cartCheckoutModule");
+const { createRequireRoleMiddleware } = require("../backend/middleware/requireRole");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -475,7 +477,7 @@ async function startServer() {
     console.log("MongoDB connected successfully.");
     console.log("Database:", mongoose.connection.name);
 
-    mountAuthApi({
+    const { authenticate } = mountAuthApi({
       app,
       expressImpl: express,
       mongooseImpl: mongoose,
@@ -483,6 +485,21 @@ async function startServer() {
       bcryptImpl: bcrypt,
       jwtImpl: jwt
     });
+
+    // Cart, checkout and orders (API-05 to API-12) are for logged-in CUSTOMERs only:
+    // a valid token is checked first, then the role (staff accounts get 403).
+    const requireCustomer = createRequireRoleMiddleware("CUSTOMER");
+    const authenticateCustomer = (req, res, next) =>
+      authenticate(req, res, (err) =>
+        err ? next(err) : requireCustomer(req, res, next)
+      );
+    app.use(
+      "/api/v1",
+      createCartCheckoutRouter({
+        authenticate: authenticateCustomer,
+        mongooseImpl: mongoose,
+      })
+    );
     app.use(errorHandler);
 
     app.listen(PORT, () => {

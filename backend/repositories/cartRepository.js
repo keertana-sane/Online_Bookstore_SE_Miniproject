@@ -1,5 +1,3 @@
-const Cart = require('../models/Cart');
-
 function toDomain(doc) {
   if (!doc) return null;
   return {
@@ -8,23 +6,27 @@ function toDomain(doc) {
   };
 }
 
-/** Returns the customer's cart, or null if they never added anything. */
-async function findByCustomerId(customerId) {
-  return toDomain(await Cart.findOne({ customerId }).lean());
+function createCartRepository(Cart) {
+  /** Returns the customer's cart, or null if they never added anything. */
+  async function findByCustomerId(customerId) {
+    return toDomain(await Cart.findOne({ customerId }).lean());
+  }
+
+  /** Replaces the cart's items (creates the cart on first use). */
+  async function saveItems(customerId, items) {
+    const doc = await Cart.findOneAndUpdate(
+      { customerId },
+      { $set: { items } },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    ).lean();
+    return toDomain(doc);
+  }
+
+  async function clear(customerId) {
+    await Cart.updateOne({ customerId }, { $set: { items: [] } });
+  }
+
+  return { findByCustomerId, saveItems, clear };
 }
 
-/** Replaces the cart's items (creates the cart on first use). */
-async function saveItems(customerId, items) {
-  const doc = await Cart.findOneAndUpdate(
-    { customerId },
-    { $set: { items } },
-    { upsert: true, new: true, setDefaultsOnInsert: true }
-  ).lean();
-  return toDomain(doc);
-}
-
-async function clear(customerId) {
-  await Cart.updateOne({ customerId }, { $set: { items: [] } });
-}
-
-module.exports = { findByCustomerId, saveItems, clear };
+module.exports = { createCartRepository };

@@ -68,6 +68,33 @@ function createFakeOrderRepo() {
     async findByCustomerAndKey(customerId, idempotencyKey) {
       const o = orders.find((x) => x.customerId === customerId && x.idempotencyKey === idempotencyKey);
       return o ? { ...o } : null;
+    },
+    // Same rules as the Mongo repository: confirmed orders only, owner only, newest first.
+    async listByCustomer(customerId) {
+      return orders
+        .map((o, index) => ({ o, index }))
+        .filter(({ o }) => o.customerId === customerId && o.paymentStatus === 'SUCCESS')
+        .sort((a, b) => b.o.createdAt - a.o.createdAt || b.index - a.index)
+        .map(({ o }) => ({ ...o }));
+    },
+    async findByIdForCustomer(customerId, orderId) {
+      const o = orders.find(
+        (x) => x.id === orderId && x.customerId === customerId && x.paymentStatus === 'SUCCESS'
+      );
+      return o ? { ...o, statusHistory: [...(o.statusHistory || [])] } : null;
+    },
+    async transitionStatus(customerId, orderId, fromStatus, toStatus, historyEntry) {
+      const o = orders.find(
+        (x) =>
+          x.id === orderId &&
+          x.customerId === customerId &&
+          x.paymentStatus === 'SUCCESS' &&
+          x.orderStatus === fromStatus
+      );
+      if (!o) return null;
+      o.orderStatus = toStatus;
+      o.statusHistory = [...(o.statusHistory || []), historyEntry];
+      return { ...o };
     }
   };
 }

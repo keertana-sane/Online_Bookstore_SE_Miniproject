@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { createCartApi } from '../../api/cartApi';
+import { createShopApi } from '../../api/shopApi';
 import { useCart } from '../../hooks/useCart';
-import './cart.css';
+import { describeError } from './errors';
+import { formatMoney } from './format';
+import './shop.css';
 
 /**
  * Cart screen (SAD screen 3, FR-007, FR-008): edit quantities, remove items and see
@@ -9,30 +11,11 @@ import './cart.css';
  *
  * Props
  *  api                  optional; defaults to createCartApi() (pass a fake in tests)
- *  onCheckout()         called by "Proceed to checkout" (the Checkout screen is BK-39)
+ *  onCheckout()         called by "Proceed to checkout" (opens the checkout screen)
  *  onContinueShopping() called from the empty cart
  *  onLogin()            called by "Log in" when the server answers 401
  *  currency             symbol put before prices (default "₹")
  */
-export function describeError(error) {
-  if (!error) return '';
-  if (error.status === 401) return 'Please log in to see your cart.';
-  if (error.code === 'NETWORK_ERROR') {
-    return 'Could not reach the server. Check your connection and try again.';
-  }
-  if (error.code === 'OUT_OF_STOCK') {
-    const available = error.details && error.details[0] && error.details[0].available;
-    if (typeof available === 'number') {
-      return available === 0
-        ? 'That book is out of stock.'
-        : `Only ${available} ${available === 1 ? 'copy is' : 'copies are'} available.`;
-    }
-    return 'Not enough stock for that quantity.';
-  }
-  if (error.code === 'VALIDATION_ERROR' && error.message) return error.message;
-  return 'Something went wrong. Please try again.';
-}
-
 function CartLine({ item, busy, onSetQuantity, onRemove, money }) {
   const [draft, setDraft] = useState(String(item.quantity));
   useEffect(() => setDraft(String(item.quantity)), [item.quantity]);
@@ -124,14 +107,10 @@ export default function CartPage({
   onLogin,
   currency = '₹'
 }) {
-  const cartApi = useMemo(() => api || createCartApi(), [api]);
+  const cartApi = useMemo(() => api || createShopApi(), [api]);
   const { cart, loading, error, busyBookId, reload, setQuantity, removeItem } = useCart(cartApi);
 
-  const money = (value) =>
-    `${currency}${Number(value).toLocaleString('en-IN', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    })}`;
+  const money = (value) => formatMoney(value, currency);
 
   const items = cart ? cart.items : [];
   const hasProblem = items.some((i) => !i.available || !i.inStock);

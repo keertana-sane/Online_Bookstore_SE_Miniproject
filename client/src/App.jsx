@@ -3,12 +3,19 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import "./App.css";
 import AuthDialog from "./components/AuthDialog.jsx";
 import { TOKEN_KEY } from "./api/authApi.js";
+import { createShopApi } from "./api/shopApi.js";
+import CartPage from "./components/shop/CartPage.jsx";
+import CheckoutPage from "./components/shop/CheckoutPage.jsx";
+import OrderConfirmation from "./components/shop/OrderConfirmation.jsx";
+import OrdersPage from "./components/shop/OrdersPage.jsx";
+import { describeError } from "./components/shop/errors.js";
 
 const API_URL =
   import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 const AUTH_EMAIL_KEY = "userEmail";
 const AUTH_ROLE_KEY = "userRole";
 const PAGE_SIZE = 20;
+const shopApi = createShopApi(); // cart and order calls (SAD API-05 to API-12)
 
 const EMPTY_FORM = {
   title: "",
@@ -28,6 +35,10 @@ function App() {
     };
   });
   const [authDialogMode, setAuthDialogMode] = useState(null);
+  // Which screen is open: "catalog" | "cart" | "checkout" | "confirmation" | "orders".
+  const [view, setView] = useState("catalog");
+  const [placed, setPlaced] = useState(null); // { order, address } after a successful checkout
+  const [cartFeedback, setCartFeedback] = useState(null); // { bookId, text, isError }
   const [books, setBooks] = useState([]);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -343,11 +354,48 @@ function App() {
     setAuthDialogMode(null);
   }
 
+  const isCustomer = authUser?.role === "CUSTOMER";
+
+  // Cart is for logged-in customers (FR-006). Feedback is shown on the book's own card.
+  async function addToCart(book) {
+    if (!authUser) {
+      setCartFeedback({ bookId: book._id, text: "Sign in to add books to your cart.", isError: true });
+      setAuthDialogMode("login");
+      return;
+    }
+    if (!isCustomer) {
+      setCartFeedback({ bookId: book._id, text: "Only customer accounts can use the cart.", isError: true });
+      return;
+    }
+    try {
+      await shopApi.addItem(book._id, 1);
+      setCartFeedback({ bookId: book._id, text: "Added to your cart.", isError: false });
+    } catch (err) {
+      if (err.status === 401) {
+        handleLogout();
+        setAuthDialogMode("login");
+      }
+      setCartFeedback({ bookId: book._id, text: describeError(err), isError: true });
+    }
+  }
+
+  // Cart and orders need a login; send guests to the sign-in dialog instead.
+  function openShopView(next) {
+    if (!authUser) {
+      setAuthDialogMode("login");
+      return;
+    }
+    setView(next);
+    window.scrollTo?.({ top: 0 });
+  }
+
   function handleLogout() {
     window.sessionStorage.removeItem(TOKEN_KEY);
     window.sessionStorage.removeItem(AUTH_EMAIL_KEY);
     window.sessionStorage.removeItem(AUTH_ROLE_KEY);
     setAuthUser(null);
+    setView("catalog");
+    setPlaced(null);
   }
 
   return (
@@ -360,6 +408,34 @@ function App() {
 
         <div className="topbar-actions">
           <span className="admin-label">BOOKSTORE MANAGEMENT</span>
+          {isCustomer && (
+            <nav className="shop-nav" aria-label="Shopping">
+              <button
+                type="button"
+                className="auth-nav-button"
+                aria-current={view === "catalog" ? "page" : undefined}
+                onClick={() => setView("catalog")}
+              >
+                Catalog
+              </button>
+              <button
+                type="button"
+                className="auth-nav-button"
+                aria-current={view === "cart" || view === "checkout" ? "page" : undefined}
+                onClick={() => openShopView("cart")}
+              >
+                Cart
+              </button>
+              <button
+                type="button"
+                className="auth-nav-button"
+                aria-current={view === "orders" ? "page" : undefined}
+                onClick={() => openShopView("orders")}
+              >
+                My orders
+              </button>
+            </nav>
+          )}
           {authUser ? (
             <>
               <span className="signed-in-label" title={authUser.role}>
@@ -398,6 +474,54 @@ function App() {
         />
       )}
 
+      {view === "cart" && (
+        <main className="container">
+          <CartPage
+            api={shopApi}
+            onCheckout={() => setView("checkout")}
+            onContinueShopping={() => setView("catalog")}
+            onLogin={() => setAuthDialogMode("login")}
+          />
+        </main>
+      )}
+
+      {view === "checkout" && (
+        <main className="container">
+          <CheckoutPage
+            api={shopApi}
+            onBack={() => setView("cart")}
+            onLogin={() => setAuthDialogMode("login")}
+            onPlaced={(order, address) => {
+              setPlaced({ order, address });
+              setView("confirmation");
+              window.scrollTo?.({ top: 0 });
+            }}
+          />
+        </main>
+      )}
+
+      {view === "confirmation" && (
+        <main className="container">
+          <OrderConfirmation
+            order={placed?.order}
+            address={placed?.address}
+            onViewOrders={() => setView("orders")}
+            onContinueShopping={() => setView("catalog")}
+          />
+        </main>
+      )}
+
+      {view === "orders" && (
+        <main className="container">
+          <OrdersPage
+            api={shopApi}
+            onContinueShopping={() => setView("catalog")}
+            onLogin={() => setAuthDialogMode("login")}
+          />
+        </main>
+      )}
+
+      {view === "catalog" && (
       <main className="container" id="home">
         {/* BK-13: Catalog home section */}
         <section className="hero">
@@ -718,6 +842,37 @@ function App() {
                           View Details
                         </button>
 
+                        {/* FR-006: only in-stock, active books can be added */}
+                        {book.active && !outOfStock && (
+                          <button
+                            type="button"
+                            className="add-to-cart"
+                            onClick={() => addToCart(book)}
+                          >
+                            Add to cart
+                          </button>
+                        )}
+                        {cartFeedback?.bookId === book._id && (
+                          <p
+                            className={`cart-feedback${cartFeedback.isError ? " cart-feedback--error" : ""}`}
+                            role={cartFeedback.isError ? "alert" : "status"}
+                          >
+                            {cartFeedback.text}
+                            {!cartFeedback.isError && (
+                              <>
+                                {" "}
+                                <button
+                                  type="button"
+                                  className="cart-feedback__link"
+                                  onClick={() => openShopView("cart")}
+                                >
+                                  View cart
+                                </button>
+                              </>
+                            )}
+                          </p>
+                        )}
+
                         {book.active && (
                           <div className="book-actions">
                             <button
@@ -788,6 +943,7 @@ function App() {
           </p>
         </section>
       </main>
+      )}
 
       <footer className="footer">
         Online Bookstore · Software Engineering Mini-Project

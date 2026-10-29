@@ -1,4 +1,4 @@
-const Order = require('../models/Order');
+const { isObjectId } = require('../utils/validators');
 
 function toDomain(doc) {
   if (!doc) return null;
@@ -23,27 +23,64 @@ function toDomain(doc) {
   };
 }
 
-/**
- * Inserts an order. A unique-index violation is reported as an error with
- * `duplicate` set to 'orderNumber' or 'idempotencyKey' so the service can react
- * (pick a new number, or treat the request as a retry).
- */
-async function create(data) {
-  try {
-    const doc = await Order.create(data);
-    return toDomain(doc.toObject());
-  } catch (err) {
-    if (err && err.code === 11000) {
-      const pattern = err.keyPattern || {};
-      const duplicate = pattern.orderNumber ? 'orderNumber' : 'idempotencyKey';
-      throw Object.assign(new Error('duplicate key'), { duplicate });
+// A declined payment is kept as a CANCELLED order with paymentStatus FAILED for the
+// record (SAD 4.4), but it was never a confirmed order, so customers never see it.
+const CONFIRMED = { paymentStatus: 'SUCCESS' };
+
+function createOrderRepository(Order) {
+  /**
+   * Inserts an order. A unique-index violation is reported as an error with
+   * `duplicate` set to 'orderNumber' or 'idempotencyKey' so the service can react
+   * (pick a new number, or treat the request as a retry).
+   */
+  async function create(data) {
+    try {
+      const doc = await Order.create(data);
+      return toDomain(doc.toObject());
+    } catch (err) {
+      if (err && err.code === 11000) {
+        const pattern = err.keyPattern || {};
+        const duplicate = pattern.orderNumber ? 'orderNumber' : 'idempotencyKey';
+        throw Object.assign(new Error('duplicate key'), { duplicate });
+      }
+      throw err;
     }
-    throw err;
   }
+
+  async function findByCustomerAndKey(customerId, idempotencyKey) {
+    return toDomain(await Order.findOne({ customerId, idempotencyKey }).lean());
+  }
+
+  /** The customer's confirmed orders, newest first (FR-012). */
+  async function listByCustomer(customerId) {
+    const docs = await Order.find({ customerId, ...CONFIRMED })
+      .sort({ createdAt: -1, _id: -1 })
+      .lean();
+    return docs.map(toDomain);
+  }
+
+  /** One confirmed order, only if it belongs to this customer; otherwise null. */
+  async function findByIdForCustomer(customerId, orderId) {
+    if (!isObjectId(orderId)) return null;
+    return toDomain(await Order.findOne({ _id: orderId, customerId, ...CONFIRMED }).lean());
+  }
+
+  /**
+   * Moves an order from one status to another in a single atomic update and records
+   * it in statusHistory. Returns the updated order, or null when the order is not the
+   * customer's or is no longer in `fromStatus` (someone else changed it first).
+   */
+  async function transitionStatus(customerId, orderId, fromStatus, toStatus, historyEntry) {
+    if (!isObjectId(orderId)) return null;
+    const doc = await Order.findOneAndUpdate(
+      { _id: orderId, customerId, ...CONFIRMED, orderStatus: fromStatus },
+      { $set: { orderStatus: toStatus }, $push: { statusHistory: historyEntry } },
+      { new: true }
+    ).lean();
+    return toDomain(doc);
+  }
+
+  return { create, findByCustomerAndKey, listByCustomer, findByIdForCustomer, transitionStatus };
 }
 
-async function findByCustomerAndKey(customerId, idempotencyKey) {
-  return toDomain(await Order.findOne({ customerId, idempotencyKey }).lean());
-}
-
-module.exports = { create, findByCustomerAndKey };
+module.exports = { createOrderRepository };
