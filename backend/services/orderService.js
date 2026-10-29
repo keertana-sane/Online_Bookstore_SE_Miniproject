@@ -26,11 +26,41 @@ function toResponse(order) {
   };
 }
 
+/** One row of the order history list (SAD API-10). */
+function toSummary(order) {
+  return {
+    orderId: order.id,
+    orderNumber: order.orderNumber,
+    orderStatus: order.orderStatus,
+    paymentStatus: order.paymentStatus,
+    total: order.total,
+    itemCount: order.items.reduce((sum, i) => sum + i.quantity, 0),
+    createdAt: order.createdAt
+  };
+}
+
 /**
- * Order module, checkout part (SAD C-07, sequence SD-1 "Place Order").
- * Covers FR-009 (valid checkout only), FR-010 (unique order number), FR-016 (payment
- * result recorded, no confirmed order on failure) and NFR-004 (retry never creates
- * a second order).
+ * Full order for the detail screen (SAD API-11, API-12): items, total, status and
+ * statusHistory. The actor id is replaced by a label so no user ids are exposed.
+ */
+function toDetail(order) {
+  return {
+    ...toResponse(order),
+    shippingAddress: order.shippingAddress,
+    statusHistory: order.statusHistory.map((h) => ({
+      status: h.status,
+      at: h.at,
+      by: h.actor === 'system' ? 'system' : h.actor === order.customerId ? 'you' : 'staff'
+    }))
+  };
+}
+
+/**
+ * Order module (SAD C-07, sequence SD-1 "Place Order").
+ * Checkout covers FR-009 (valid checkout only), FR-010 (unique order number), FR-016
+ * (payment result recorded, no confirmed order on failure) and NFR-004 (retry never
+ * creates a second order). Order history, detail and cancel cover FR-011, FR-012 and
+ * business rule 6.5 (a customer may cancel only while the order is PLACED).
  */
 function createOrderService({
   cartRepo,
@@ -208,7 +238,54 @@ function createOrderService({
     }
   }
 
-  return { placeOrder };
+  /** Own orders, newest first (FR-012, TC-TRK-01, TC-TRK-07). An empty list is a normal 200. */
+  async function listOrders(customerId) {
+    const orders = await orderRepo.listByCustomer(customerId);
+    return { orders: orders.map(toSummary) };
+  }
+
+  async function findOwnOrder(customerId, orderId) {
+    const order = await orderRepo.findByIdForCustomer(customerId, orderId);
+    // Someone else's order and a missing order look the same, so nothing leaks (TC-TRK-03).
+    if (!order) throw new AppError(404, 'ORDER_NOT_FOUND', 'Order not found');
+    return order;
+  }
+
+  /** One own order with items, total, status and statusHistory (TC-TRK-02). */
+  async function getOrder(customerId, orderId) {
+    return toDetail(await findOwnOrder(customerId, orderId));
+  }
+
+  /**
+   * Customer cancels an order. Allowed only while PLACED (SRS 6.5, TC-TRK-05/06).
+   * The status change is one atomic conditional update, so a double click or a
+   * staff update at the same moment can never restore the stock twice.
+   */
+  async function cancelOrder(customerId, orderId) {
+    const order = await findOwnOrder(customerId, orderId);
+    const notAllowed = () =>
+      new AppError(
+        409,
+        'CANCEL_NOT_ALLOWED',
+        'Only an order that is still PLACED can be cancelled',
+        [{ orderStatus: order.orderStatus }]
+      );
+    if (order.orderStatus !== 'PLACED') throw notAllowed();
+
+    const cancelled = await orderRepo.transitionStatus(customerId, orderId, 'PLACED', 'CANCELLED', {
+      status: 'CANCELLED',
+      actor: customerId,
+      at: now()
+    });
+    if (!cancelled) throw notAllowed(); // lost the race: already cancelled or moved on
+
+    for (const item of order.items) {
+      await bookRepo.releaseStock(item.bookId, item.quantity); // restore reserved stock
+    }
+    return toDetail(cancelled);
+  }
+
+  return { placeOrder, listOrders, getOrder, cancelOrder };
 }
 
-module.exports = { createOrderService, toResponse };
+module.exports = { createOrderService, toResponse, toSummary, toDetail };

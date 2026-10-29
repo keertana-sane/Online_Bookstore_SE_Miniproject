@@ -1,4 +1,3 @@
-const Book = require('../models/Book');
 const { isObjectId } = require('../utils/validators');
 
 /**
@@ -23,34 +22,38 @@ function toDomain(doc) {
   };
 }
 
-async function findById(id) {
-  if (!isObjectId(id)) return null;
-  return toDomain(await Book.findById(id).lean());
+function createBookRepository(Book) {
+  async function findById(id) {
+    if (!isObjectId(id)) return null;
+    return toDomain(await Book.findById(id).lean());
+  }
+
+  async function findByIds(ids) {
+    const valid = ids.filter(isObjectId);
+    if (valid.length === 0) return [];
+    const docs = await Book.find({ _id: { $in: valid } }).lean();
+    return docs.map(toDomain);
+  }
+
+  /**
+   * Atomically takes `quantity` units out of stock. Returns true on success and
+   * false when the book is inactive or has fewer than `quantity` units, so two
+   * customers can never both buy the last copy (SAD: stock reserved atomically).
+   */
+  async function reserveStock(id, quantity) {
+    const result = await Book.updateOne(
+      { _id: id, [FIELD.active]: true, [FIELD.stock]: { $gte: quantity } },
+      { $inc: { [FIELD.stock]: -quantity } }
+    );
+    return result.modifiedCount === 1;
+  }
+
+  /** Puts previously reserved units back (payment declined/timed out, order cancelled). */
+  async function releaseStock(id, quantity) {
+    await Book.updateOne({ _id: id }, { $inc: { [FIELD.stock]: quantity } });
+  }
+
+  return { findById, findByIds, reserveStock, releaseStock };
 }
 
-async function findByIds(ids) {
-  const valid = ids.filter(isObjectId);
-  if (valid.length === 0) return [];
-  const docs = await Book.find({ _id: { $in: valid } }).lean();
-  return docs.map(toDomain);
-}
-
-/**
- * Atomically takes `quantity` units out of stock. Returns true on success and
- * false when the book is inactive or has fewer than `quantity` units, so two
- * customers can never both buy the last copy (SAD: stock reserved atomically).
- */
-async function reserveStock(id, quantity) {
-  const result = await Book.updateOne(
-    { _id: id, [FIELD.active]: true, [FIELD.stock]: { $gte: quantity } },
-    { $inc: { [FIELD.stock]: -quantity } }
-  );
-  return result.modifiedCount === 1;
-}
-
-/** Puts previously reserved units back (payment declined/timed out, order cancelled). */
-async function releaseStock(id, quantity) {
-  await Book.updateOne({ _id: id }, { $inc: { [FIELD.stock]: quantity } });
-}
-
-module.exports = { findById, findByIds, reserveStock, releaseStock };
+module.exports = { createBookRepository };
