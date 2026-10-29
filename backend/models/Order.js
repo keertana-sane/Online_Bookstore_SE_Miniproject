@@ -37,8 +37,8 @@ function createOrderModel(mongoose) {
       total: { type: Number, required: true, min: 0 },
       shippingAddress: { type: String, required: true, maxlength: 300 },
       orderStatus: { type: String, enum: ORDER_STATUSES, default: 'PLACED', required: true },
-      paymentStatus: { type: String, enum: PAYMENT_STATUSES, required: true },
-      paymentRef: { type: String, required: true },
+      paymentStatus: { type: String, enum: PAYMENT_STATUSES, required: true, maxlength: 20 },
+      paymentRef: { type: String, required: true, maxlength: 100 },
       idempotencyKey: { type: String, required: true },
       statusHistory: { type: [statusHistorySchema], default: [] }
     },

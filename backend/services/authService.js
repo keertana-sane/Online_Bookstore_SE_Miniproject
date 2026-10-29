@@ -1,4 +1,6 @@
 const AppError = require('../utils/AppError');
+const { INPUT_LIMITS } = require('../utils/inputLimits');
+const { validateText } = require('../utils/validators');
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const BCRYPT_ROUNDS = 12;
@@ -11,18 +13,19 @@ function invalid(field, message) {
 function createAuthService({ userRepo, jwtSecret, bcryptImpl = require('bcryptjs'), jwtImpl = require('jsonwebtoken') }) {
   async function register(input) {
     const body = input || {};
-    const name = typeof body.name === 'string' ? body.name.trim() : '';
+    const name = validateText(body.name, 'name', INPUT_LIMITS.name);
     const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
     const password = body.password;
 
-    if (!name) {
-      throw invalid('name', 'name is required');
-    }
-    if (!EMAIL.test(email)) {
+    if (!EMAIL.test(email) || email.length > INPUT_LIMITS.email) {
       throw invalid('email', 'email must be a valid email address');
     }
-    if (typeof password !== 'string' || password.length < 8) {
-      throw invalid('password', 'password must be at least 8 characters');
+    if (
+      typeof password !== 'string' ||
+      password.length < 8 ||
+      password.length > INPUT_LIMITS.password
+    ) {
+      throw invalid('password', `password must be 8 to ${INPUT_LIMITS.password} characters`);
     }
 
     const password_hash = await bcryptImpl.hash(password, BCRYPT_ROUNDS);
@@ -40,8 +43,10 @@ function createAuthService({ userRepo, jwtSecret, bcryptImpl = require('bcryptjs
     const body = input || {};
     const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
     const password = body.password;
-    const user = EMAIL.test(email) ? await userRepo.findByEmail(email) : null;
-    const matches = user && typeof password === 'string'
+    const user = EMAIL.test(email) && email.length <= INPUT_LIMITS.email
+      ? await userRepo.findByEmail(email)
+      : null;
+    const matches = user && typeof password === 'string' && password.length <= INPUT_LIMITS.password
       ? await bcryptImpl.compare(password, user.password_hash)
       : false;
 

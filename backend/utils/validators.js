@@ -1,4 +1,5 @@
 const AppError = require('./AppError');
+const { INPUT_LIMITS } = require('./inputLimits');
 
 const OBJECT_ID = /^[a-f\d]{24}$/i;
 
@@ -8,6 +9,15 @@ function isObjectId(value) {
 
 function validationError(field, message) {
   return new AppError(422, 'VALIDATION_ERROR', message, [{ field, message }]);
+}
+
+function validateText(value, field, maxLength, { optional = false } = {}) {
+  if (optional && value === undefined) return undefined;
+  const text = typeof value === 'string' ? value.trim() : '';
+  if (!text || text.length > maxLength || /[<>]/.test(text)) {
+    throw validationError(field, `${field} must be 1 to ${maxLength} plain-text characters`);
+  }
+  return text;
 }
 
 /** Throws 422 unless value is a valid 24-hex book id. */
@@ -32,4 +42,11 @@ function parseQuantity(value, fallback) {
   return value;
 }
 
-module.exports = { isObjectId, requireBookId, parseQuantity, validationError };
+module.exports = {
+  isObjectId,
+  requireBookId,
+  parseQuantity,
+  validateText,
+  validationError,
+  INPUT_LIMITS
+};

@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const AppError = require('../utils/AppError');
 const { toCents, fromCents } = require('../utils/money');
-const { validationError } = require('../utils/validators');
+const { validateText, validationError } = require('../utils/validators');
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_ADDRESS = 300; // SRS Appendix B: shipping_address length 300
@@ -78,14 +78,7 @@ function createOrderService({
   }
 
   function validateAddress(address) {
-    const trimmed = typeof address === 'string' ? address.trim() : '';
-    if (trimmed.length < 1 || trimmed.length > MAX_ADDRESS) {
-      throw validationError(
-        'shippingAddress',
-        `shippingAddress is required and must be 1 to ${MAX_ADDRESS} characters`
-      );
-    }
-    return trimmed;
+    return validateText(address, 'shippingAddress', MAX_ADDRESS);
   }
 
   async function persistOrder(data) {
