@@ -68,6 +68,9 @@ jobs:
       - name: Install backend dependencies
         run: npm ci
 
+      - name: Install shared backend module dependencies
+        run: npm ci --prefix ../backend
+
       - name: Audit server dependencies
         run: npm audit --audit-level=high
 
