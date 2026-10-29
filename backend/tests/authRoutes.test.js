@@ -8,14 +8,20 @@ const userRepo = require('../repositories/userRepository');
 const { createUserModel } = require('../models/User');
 const authModule = require('../routes/authModule');
 const AppError = require('../utils/AppError');
+const { sanitizeInput } = require('../middleware/sanitizeInput');
+const { createLoginRateLimiter } = require('../middleware/loginRateLimit');
 const User = createUserModel();
 
 const JWT_SECRET = 'test-secret-for-jwt-signing';
 
-function createApp(userRepo) {
+function createApp(userRepo, options = {}) {
   const app = express();
   app.use(express.json());
-  app.use('/api/v1', createAuthRouter({ authService: createAuthService({ userRepo, jwtSecret: JWT_SECRET }) }));
+  app.use(sanitizeInput);
+  app.use('/api/v1', createAuthRouter({
+    authService: createAuthService({ userRepo, jwtSecret: JWT_SECRET }),
+    ...options
+  }));
   app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
     if (err instanceof AppError) {
       return res.status(err.status).json({
@@ -98,6 +104,27 @@ describe('POST /api/v1/auth/register', () => {
       .expect(422);
     expect(invalidEmail.body.error.details[0].field).toBe('email');
   });
+
+  test.each([
+    [{ name: 'x'.repeat(101), email: 'pat@example.com', password: 'bookworm' }, 'name'],
+    [{ name: 'Pat Reader', email: 'x'.repeat(90) + '@example.com', password: 'bookworm' }, 'email'],
+    [{ name: 'Pat Reader', email: 'pat@example.com', password: 'p'.repeat(73) }, 'password'],
+    [{ name: '<script>alert(1)</script>', email: 'pat@example.com', password: 'bookworm' }, 'name']
+  ])('rejects invalid limits and markup (%s)', async (payload, field) => {
+    const response = await request(createApp(createFakeUserRepo()))
+      .post('/api/v1/auth/register')
+      .send(payload)
+      .expect(422);
+    expect(response.body.error.details[0].field).toBe(field);
+  });
+
+  test('operator-shaped registration values are removed and rejected', async () => {
+    const response = await request(createApp(createFakeUserRepo()))
+      .post('/api/v1/auth/register')
+      .send({ name: 'Pat Reader', email: { $gt: '' }, password: 'bookworm' })
+      .expect(422);
+    expect(response.body.error.details[0].field).toBe('email');
+  });
 });
 
 describe('POST /api/v1/auth/login', () => {
@@ -138,6 +165,29 @@ describe('POST /api/v1/auth/login', () => {
       code: 'INVALID_CREDENTIALS',
       message: 'Invalid email or password'
     });
+  });
+
+  test('returns 429 on the 11th login attempt within 15 minutes', async () => {
+    const securityLogger = jest.fn();
+    const app = createApp(createFakeUserRepo(), {
+      securityLogger,
+      loginRateLimiter: createLoginRateLimiter({ onLimit: securityLogger })
+    });
+
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      await request(app)
+        .post('/api/v1/auth/login')
+        .send({ email: 'unknown@example.com', password: 'bookworm' })
+        .expect(401);
+    }
+
+    const response = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: 'unknown@example.com', password: 'bookworm' })
+      .expect(429);
+    expect(response.body.error.code).toBe('RATE_LIMITED');
+    expect(securityLogger).toHaveBeenCalledWith(expect.anything(), 'login_rate_limited');
+    expect(securityLogger).toHaveBeenCalledWith(expect.anything(), 'login_failed');
   });
 });
 

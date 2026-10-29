@@ -1,5 +1,6 @@
 
 const mongoose = require('mongoose');
+const { isValidPrice } = require('../utils/inputLimits');
 
 const bookSchema = new mongoose.Schema(
   {
@@ -24,12 +25,16 @@ const bookSchema = new mongoose.Schema(
     price: {
       type: Number,
       required: true,
-      min: 0
+      min: 0,
+      max: 99999999.99,
+      validate: { validator: isValidPrice, message: 'price must have at most two decimal places' }
     },
     stock_quantity: {
       type: Number,
       required: true,
       min: 0,
+      max: 999999,
+      validate: { validator: Number.isInteger, message: 'stock_quantity must be a whole number' },
       default: 0
     },
     description: {

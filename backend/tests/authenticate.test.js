@@ -5,11 +5,11 @@ const { createAuthenticateMiddleware } = require('../middleware/authenticate');
 
 const JWT_SECRET = 'test-secret-for-authentication';
 
-function createApp() {
+function createApp(securityLogger = () => {}) {
   const app = express();
   app.get(
     '/protected',
-    createAuthenticateMiddleware({ jwtSecret: JWT_SECRET }),
+    createAuthenticateMiddleware({ jwtSecret: JWT_SECRET, securityLogger }),
     (req, res) => res.json({ user: req.user })
   );
   return app;
@@ -17,11 +17,13 @@ function createApp() {
 
 describe('JWT authentication middleware', () => {
   test('returns 401 when the bearer token is missing', async () => {
-    const response = await request(createApp()).get('/protected').expect(401);
+    const securityLogger = jest.fn();
+    const response = await request(createApp(securityLogger)).get('/protected').expect(401);
     expect(response.body.error).toMatchObject({
       code: 'UNAUTHORIZED',
       message: 'Login required'
     });
+    expect(securityLogger).toHaveBeenCalledWith(expect.anything(), 'unauthorized_access');
   });
 
   test('returns 401 for an expired token', async () => {
