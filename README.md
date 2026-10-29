@@ -110,3 +110,7 @@ npm run build
 ```
 
 The admin API tests use an in-memory fake repository and mocked authentication; no Docker, production credentials, or real customer data are required. Frontend admin tests use mocked API responses and do not access the network.
+
+## Admin module documentation
+
+See [docs/ADMIN_MODULE.md](docs/ADMIN_MODULE.md) for the Admin UI, authentication and role requirements, API contracts, order-status lifecycle, environment setup, deviations, and known Docker limitations.
