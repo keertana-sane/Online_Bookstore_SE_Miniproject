@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom/vitest';
 import CheckoutPage from './CheckoutPage';
@@ -53,8 +53,7 @@ const ADDRESS = '12 MG Road, Bengaluru 560001';
 
 async function fillAddress(text = ADDRESS) {
   const box = await screen.findByLabelText('Shipping address');
-  await userEvent.clear(box);
-  await userEvent.type(box, text);
+  fireEvent.change(box, { target: { value: text } });
   return box;
 }
 

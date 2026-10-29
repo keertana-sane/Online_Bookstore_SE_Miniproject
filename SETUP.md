@@ -40,6 +40,10 @@ the auth module is mounted (default `http://localhost:5000/api/v1`). After a suc
 login, the token is stored in browser `sessionStorage` under the `token` key and is
 cleared on sign-out.
 
+Sprint 2 auth/security implementation, SRS traceability, validation limits, and demo
+deviations are recorded in [docs/AUTH_SECURITY.md](docs/AUTH_SECURITY.md). The CI
+workflow runs linting, dependency audits, and the server/backend tests.
+
 ## Sprint 1 auth demo video
 
 From the repository root, install the client dependencies, install the Playwright browser,
