@@ -8,6 +8,7 @@ import CartPage from "./components/shop/CartPage.jsx";
 import CheckoutPage from "./components/shop/CheckoutPage.jsx";
 import OrderConfirmation from "./components/shop/OrderConfirmation.jsx";
 import OrdersPage from "./components/shop/OrdersPage.jsx";
+import AdminOrdersPage from "./components/admin/AdminOrdersPage.jsx";
 import { describeError } from "./components/shop/errors.js";
 
 const API_URL =
@@ -35,7 +36,7 @@ function App() {
     };
   });
   const [authDialogMode, setAuthDialogMode] = useState(null);
-  // Which screen is open: "catalog" | "cart" | "checkout" | "confirmation" | "orders".
+  // Which screen is open: "catalog" | "cart" | "checkout" | "confirmation" | "orders" | "admin-orders".
   const [view, setView] = useState("catalog");
   const [placed, setPlaced] = useState(null); // { order, address } after a successful checkout
   const [cartFeedback, setCartFeedback] = useState(null); // { bookId, text, isError }
@@ -355,6 +356,7 @@ function App() {
   }
 
   const isCustomer = authUser?.role === "CUSTOMER";
+  const isAdmin = authUser?.role === "ADMIN_STAFF";
 
   // Cart is for logged-in customers (FR-006). Feedback is shown on the book's own card.
   async function addToCart(book) {
@@ -436,6 +438,26 @@ function App() {
               </button>
             </nav>
           )}
+          {isAdmin && (
+            <nav className="shop-nav" aria-label="Administration">
+              <button
+                type="button"
+                className="auth-nav-button"
+                aria-current={view === "catalog" ? "page" : undefined}
+                onClick={() => setView("catalog")}
+              >
+                Catalog
+              </button>
+              <button
+                type="button"
+                className="auth-nav-button"
+                aria-current={view === "admin-orders" ? "page" : undefined}
+                onClick={() => setView("admin-orders")}
+              >
+                Orders
+              </button>
+            </nav>
+          )}
           {authUser ? (
             <>
               <span className="signed-in-label" title={authUser.role}>
@@ -508,6 +530,12 @@ function App() {
             onViewOrders={() => setView("orders")}
             onContinueShopping={() => setView("catalog")}
           />
+        </main>
+      )}
+
+      {view === "admin-orders" && isAdmin && (
+        <main className="container">
+          <AdminOrdersPage onUnauthorized={handleLogout} />
         </main>
       )}
 

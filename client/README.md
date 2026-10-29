@@ -14,3 +14,7 @@ The React Compiler is not enabled on this template because of its impact on dev 
 ## Expanding the Oxlint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+
+## Administrator order management
+
+Administrators with the `ADMIN_STAFF` role can open **Orders** from the application header. The screen lists orders returned by `GET /api/v1/admin/orders`, supports the existing status filter, and updates an order through `PATCH /api/v1/admin/orders/:orderId/status`. A successful update reloads the list. The UI only offers legal next statuses; backend authorization and transition validation remain authoritative.

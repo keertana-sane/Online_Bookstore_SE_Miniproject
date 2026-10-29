@@ -100,5 +100,13 @@ export function createShopApi({
     listOrders: () => request("GET", "/orders"),
     getOrder: (orderId) => request("GET", `/orders/${id(orderId)}`),
     cancelOrder: (orderId) => request("PATCH", `/orders/${id(orderId)}/cancel`),
+
+    // Administrator order management (FR-015)
+    listAdminOrders: (status) => {
+      const query = status ? `?status=${encodeURIComponent(status)}` : "";
+      return request("GET", `/admin/orders${query}`);
+    },
+    updateAdminOrderStatus: (orderId, status) =>
+      request("PATCH", `/admin/orders/${id(orderId)}/status`, { body: { status } }),
   };
 }
