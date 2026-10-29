@@ -1,4 +1,5 @@
 const { isObjectId } = require('../utils/validators');
+const { assertOrderStatusTransition } = require('../services/orderStatusMachine');
 
 function toDomain(doc) {
   if (!doc) return null;
@@ -71,6 +72,7 @@ function createOrderRepository(Order) {
    * customer's or is no longer in `fromStatus` (someone else changed it first).
    */
   async function transitionStatus(customerId, orderId, fromStatus, toStatus, historyEntry) {
+    assertOrderStatusTransition(fromStatus, toStatus);
     if (!isObjectId(orderId)) return null;
     const doc = await Order.findOneAndUpdate(
       { _id: orderId, customerId, ...CONFIRMED, orderStatus: fromStatus },
