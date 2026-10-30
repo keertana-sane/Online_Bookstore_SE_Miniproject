@@ -99,9 +99,13 @@ app.get("/", (req, res) => {
     message: "Online Bookstore API is running!",
   });
 });
-
-// Health check
-app.get("/api/health", (req, res, next) => {
+<<<<<<< HEAD
+  // Health check (BK-32)
+  const healthHandler = (req, res) => {
+=======
+  // Health check
+  app.get("/api/health", (req, res, next) => {
+>>>>>>> origin/main
   const connected = mongoose.connection.readyState === 1;
 
   if (!connected) {
@@ -113,7 +117,10 @@ app.get("/api/health", (req, res, next) => {
     application: "Online Bookstore",
     database: "Connected",
   });
-});
+};
+
+app.get("/health", healthHandler);
+app.get("/api/health", healthHandler);
 
 // BK-10 + BK-11: Browse, paginate, and search books.
 app.get("/api/books", async (req, res, next) => {

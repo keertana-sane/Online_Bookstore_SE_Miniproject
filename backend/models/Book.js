@@ -58,5 +58,7 @@ const bookSchema = new mongoose.Schema(
     timestamps: true
   }
 );
+// BK-29: Optimize active catalog browsing and newest-first pagination.
+bookSchema.index({ is_active: 1, createdAt: -1, _id: -1 });
 
 module.exports = mongoose.model('Book', bookSchema);

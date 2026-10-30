@@ -1,0 +1,4 @@
+Label,# Samples,Average,Min,Max,Std. Dev.,Error %,Throughput,Received KB/sec,Sent KB/sec,Avg. Bytes
+Browse Catalog,500,4,3,22,2.46,0.000%,50.49485,377.48,6.95,7655.0
+Search Catalog,500,6,5,18,1.78,0.000%,50.51526,377.93,7.65,7661.0
+TOTAL,1000,5,3,22,2.28,0.000%,100.91836,754.72,14.59,7658.0
