@@ -80,8 +80,8 @@ app.get("/", (req, res) => {
   });
 });
 
-// Health check
-app.get("/api/health", (req, res) => {
+ // Health check (BK-32)
+const healthHandler = (req, res) => {
   const connected = mongoose.connection.readyState === 1;
 
   res.status(connected ? 200 : 503).json({
@@ -89,7 +89,10 @@ app.get("/api/health", (req, res) => {
     application: "Online Bookstore",
     database: connected ? "Connected" : "Disconnected",
   });
-});
+};
+
+app.get("/health", healthHandler);
+app.get("/api/health", healthHandler);
 
 // BK-10 + BK-11: Browse, paginate, and search books.
 app.get("/api/books", async (req, res) => {
