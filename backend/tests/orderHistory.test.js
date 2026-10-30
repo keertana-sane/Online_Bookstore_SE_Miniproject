@@ -131,7 +131,7 @@ describe('order detail (TC-TRK-02, TC-TRK-03)', () => {
 
 describe('cancel order (SRS 6.5, TC-TRK-05, TC-TRK-06)', () => {
   test('cancels a PLACED order, records it and restores the stock', async () => {
-    const { service, order, bookRepo } = setup();
+    const { service, order, bookRepo, orderRepo } = setup();
     const placed = await order(A, 1, [
       { bookId: B1, quantity: 2 },
       { bookId: B2, quantity: 1 }
@@ -141,18 +141,32 @@ describe('cancel order (SRS 6.5, TC-TRK-05, TC-TRK-06)', () => {
 
     const cancelled = await service.cancelOrder(A, placed.orderId);
 
+    expect(orderRepo.orders[0].statusHistory[1]).toMatchObject({
+      actor: A,
+      at: expect.any(Date),
+      previousStatus: 'PLACED',
+      newStatus: 'CANCELLED'
+    });
+    expect(orderRepo.orders[0].statusHistory[1].actor).not.toBe('attacker-supplied');
     expect(cancelled.orderStatus).toBe('CANCELLED');
     expect(cancelled.statusHistory.map((h) => [h.status, h.by])).toEqual([
       ['PLACED', 'you'],
       ['CANCELLED', 'you']
     ]);
+    expect(cancelled.statusHistory[1]).toMatchObject({
+      status: 'CANCELLED',
+      previousStatus: 'PLACED',
+      newStatus: 'CANCELLED',
+      at: expect.any(Date)
+    });
+    expect(cancelled.statusHistory[1].by).toBe('you');
     expect(bookRepo.store.get(B1).stock).toBe(10);
     expect(bookRepo.store.get(B2).stock).toBe(10);
     expect((await service.getOrder(A, placed.orderId)).orderStatus).toBe('CANCELLED');
   });
 
   test.each(['PROCESSING', 'SHIPPED', 'DELIVERED'])(
-    '409 CANCEL_NOT_ALLOWED once the order is %s, and nothing changes',
+    '409 INVALID_ORDER_STATUS_TRANSITION once the order is %s, and nothing changes',
     async (status) => {
       const { service, order, orderRepo, bookRepo } = setup();
       const placed = await order(A, 1);
@@ -160,7 +174,7 @@ describe('cancel order (SRS 6.5, TC-TRK-05, TC-TRK-06)', () => {
 
       await expect(service.cancelOrder(A, placed.orderId)).rejects.toMatchObject({
         status: 409,
-        code: 'CANCEL_NOT_ALLOWED'
+        code: 'INVALID_ORDER_STATUS_TRANSITION'
       });
       expect(orderRepo.orders[0].orderStatus).toBe(status);
       expect(bookRepo.store.get(B1).stock).toBe(8); // not restored
@@ -173,7 +187,8 @@ describe('cancel order (SRS 6.5, TC-TRK-05, TC-TRK-06)', () => {
 
     await service.cancelOrder(A, placed.orderId);
     await expect(service.cancelOrder(A, placed.orderId)).rejects.toMatchObject({
-      code: 'CANCEL_NOT_ALLOWED'
+      status: 409,
+      code: 'INVALID_ORDER_STATUS_TRANSITION'
     });
     expect(bookRepo.store.get(B1).stock).toBe(10); // not 12
   });
@@ -223,7 +238,7 @@ describe('HTTP: /api/v1/orders (API-10, API-11, API-12)', () => {
   });
 
   test('history, detail and cancel work end to end', async () => {
-    const { app, order } = setup();
+    const { app, order, orderRepo } = setup();
     const placed = await order(A, 1);
 
     const list = await request(app).get('/api/v1/orders').set(as(A)).expect(200);
@@ -235,14 +250,39 @@ describe('HTTP: /api/v1/orders (API-10, API-11, API-12)', () => {
     const cancelled = await request(app)
       .patch(`/api/v1/orders/${placed.orderId}/cancel`)
       .set(as(A))
+      .send({ actor: 'attacker-supplied' })
       .expect(200);
     expect(cancelled.body.orderStatus).toBe('CANCELLED');
+    expect(orderRepo.orders[0].statusHistory[1]).toMatchObject({
+      previousStatus: 'PLACED',
+      newStatus: 'CANCELLED',
+      actor: A,
+      at: expect.any(Date)
+    });
 
     const again = await request(app)
       .patch(`/api/v1/orders/${placed.orderId}/cancel`)
       .set(as(A))
       .expect(409);
-    expect(again.body.error.code).toBe('CANCEL_NOT_ALLOWED');
+    expect(again.body.error.code).toBe('INVALID_ORDER_STATUS_TRANSITION');
+  });
+
+  test('invalid cancellation transition returns HTTP 409 with the state-machine code', async () => {
+    const { app, order, orderRepo } = setup();
+    const placed = await order(A, 1);
+    orderRepo.orders[0].orderStatus = 'PROCESSING';
+
+    const res = await request(app)
+      .patch(`/api/v1/orders/${placed.orderId}/cancel`)
+      .set(as(A))
+      .send({ actor: 'attacker-supplied' })
+      .expect(409);
+
+    expect(res.body.error).toMatchObject({
+      code: 'INVALID_ORDER_STATUS_TRANSITION',
+      message: 'Invalid order status transition: PROCESSING -> CANCELLED'
+    });
+    expect(orderRepo.orders[0].statusHistory).toHaveLength(1);
   });
 
   test('another customer\'s order is 404 ORDER_NOT_FOUND for detail and cancel', async () => {

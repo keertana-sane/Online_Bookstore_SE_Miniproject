@@ -737,3 +737,16 @@ input::placeholder {
     flex-wrap: wrap;
   }
 }
+
+.admin-orders-panel { width: min(1100px, 100%); margin: 32px auto; }
+.admin-filter { display: flex; align-items: center; gap: 12px; margin: 18px 0; color: #6f665c; font-weight: 600; }
+.admin-filter select, .admin-order-update select { min-width: 180px; padding: 10px 12px; border: 1px solid #dcd5c9; border-radius: 8px; background: white; }
+.admin-order-list { display: grid; gap: 12px; }
+.admin-order-card { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(180px, auto); gap: 16px; align-items: center; padding: 18px; border: 1px solid #e4ded4; border-radius: 10px; }
+.admin-order-card .order-list__number, .admin-order-card .order-list__meta { margin: 2px 0; }
+.admin-order-update { display: grid; gap: 5px; color: #6f665c; font-size: 12px; font-weight: 600; }
+.admin-terminal-status { font-weight: 400; }
+@media (max-width: 700px) {
+  .admin-order-card { grid-template-columns: 1fr; }
+  .admin-order-update select { width: 100%; }
+}

@@ -14,10 +14,10 @@ function tokenFor(role) {
   });
 }
 
-function createApp() {
+function createApp(securityLogger = () => {}) {
   const app = express();
-  const authenticate = createAuthenticateMiddleware({ jwtSecret: JWT_SECRET });
-  const requireAdmin = createRequireRoleMiddleware('ADMIN_STAFF');
+  const authenticate = createAuthenticateMiddleware({ jwtSecret: JWT_SECRET, securityLogger });
+  const requireAdmin = createRequireRoleMiddleware('ADMIN_STAFF', { securityLogger });
   const adminRouter = express.Router();
 
   adminRouter.use(authenticate, requireAdmin);
@@ -48,6 +48,16 @@ describe('admin role authorization', () => {
       .get('/api/v1/admin/books')
       .set('Authorization', `Bearer ${tokenFor('ADMIN_STAFF')}`)
       .expect(200, { route: 'books' });
+  });
+
+  test('logs requests denied by role authorization', async () => {
+    const securityLogger = jest.fn();
+    await request(createApp(securityLogger))
+      .get('/api/v1/admin/books')
+      .set('Authorization', `Bearer ${tokenFor('CUSTOMER')}`)
+      .expect(403);
+
+    expect(securityLogger).toHaveBeenCalledWith(expect.anything(), 'unauthorized_access');
   });
 
   test('preserves 401 for missing or invalid authentication', async () => {

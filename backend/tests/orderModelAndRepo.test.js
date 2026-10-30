@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const { createOrderModel, ORDER_STATUSES } = require('../models/Order');
 const { createCartModel } = require('../models/Cart');
+const Book = require('../models/Book');
 const { createOrderRepository } = require('../repositories/orderRepository');
 const { createCartCheckoutRouter } = require('../routes/cartCheckoutModule');
 
@@ -19,6 +20,22 @@ describe('Order model (FR-011, TC-TRK-04)', () => {
     paymentStatus: 'SUCCESS',
     paymentRef: 'ref',
     idempotencyKey: 'key'
+  });
+
+  describe('SRS Appendix B book data limits', () => {
+    test('rejects prices with more than two decimals and stock above six digits', async () => {
+      const book = new Book({
+        title: 'Book',
+        author: 'Author',
+        category: 'Fiction',
+        price: 10.001,
+        stock_quantity: 1000000
+      });
+      const error = await book.validate().then(() => null, (validationError) => validationError);
+
+      expect(error.errors.price).toBeDefined();
+      expect(error.errors.stock_quantity).toBeDefined();
+    });
   });
 
   test('allows exactly the five statuses from the SRS', async () => {
@@ -42,6 +59,23 @@ describe('Order model (FR-011, TC-TRK-04)', () => {
     expect(await check(new Order({ ...valid(), shippingAddress: 'x'.repeat(300) }))).toBeUndefined();
     const error = await check(new Order({ ...valid(), shippingAddress: 'x'.repeat(301) }));
     expect(error.errors.shippingAddress).toBeDefined();
+  });
+
+  test('only payment status and reference are stored for payment data', () => {
+    const order = new Order({
+      ...valid(),
+      cardNumber: '4111111111111111',
+      cvv: '123',
+      expiryDate: '12/30'
+    });
+    const stored = order.toObject();
+    expect(stored).not.toHaveProperty('cardNumber');
+    expect(stored).not.toHaveProperty('cvv');
+    expect(stored).not.toHaveProperty('expiryDate');
+    expect(stored).toMatchObject({ paymentStatus: 'SUCCESS', paymentRef: 'ref' });
+    expect(Object.keys(Order.schema.paths)).not.toEqual(
+      expect.arrayContaining(['cardNumber', 'cvv', 'expiryDate'])
+    );
   });
 
   test('has the unique indexes that make checkout retry-safe (NFR-004, FR-010)', () => {
@@ -94,6 +128,16 @@ describe('order repository queries (ownership and atomic cancel)', () => {
     });
   });
 
+  test('an invalid status transition is returned as HTTP conflict', async () => {
+    const repo = createOrderRepository(fakeModel());
+    await expect(
+      repo.transitionStatus(CUSTOMER, ORDER_ID, 'DELIVERED', 'PROCESSING', {})
+    ).rejects.toMatchObject({
+      status: 409,
+      code: 'INVALID_ORDER_STATUS_TRANSITION'
+    });
+  });
+
   test('a malformed order id never reaches the database', async () => {
     const Order = fakeModel();
     const repo = createOrderRepository(Order);
@@ -101,6 +145,37 @@ describe('order repository queries (ownership and atomic cancel)', () => {
     expect(await repo.transitionStatus(CUSTOMER, 'not-an-id', 'PLACED', 'CANCELLED', {})).toBeNull();
     expect(Order.calls.findOne).toBeUndefined();
     expect(Order.calls.findOneAndUpdate).toBeUndefined();
+  });
+
+  test('admin listing can filter confirmed orders by status', async () => {
+    const Order = fakeModel();
+    await createOrderRepository(Order).listAll('PROCESSING');
+    expect(Order.calls.find[0]).toEqual({ paymentStatus: 'SUCCESS', orderStatus: 'PROCESSING' });
+  });
+
+  test('admin status update is one conditional update on current status without an order owner', async () => {
+    const Order = fakeModel();
+    const entry = { actor: 'admin-id', at: new Date() };
+    await createOrderRepository(Order).transitionStatusForAdmin(
+      ORDER_ID,
+      'PLACED',
+      'PROCESSING',
+      entry
+    );
+
+    const [filter, update, options] = Order.calls.findOneAndUpdate;
+    expect(filter).toEqual({
+      _id: ORDER_ID,
+      paymentStatus: 'SUCCESS',
+      orderStatus: 'PLACED'
+    });
+    expect(update.$set).toEqual({ orderStatus: 'PROCESSING' });
+    expect(update.$push.statusHistory).toMatchObject({
+      ...entry,
+      previousStatus: 'PLACED',
+      newStatus: 'PROCESSING'
+    });
+    expect(options).toEqual({ new: true });
   });
 
   test('cancel is one conditional update on owner AND current status', async () => {
@@ -115,7 +190,16 @@ describe('order repository queries (ownership and atomic cancel)', () => {
       paymentStatus: 'SUCCESS',
       orderStatus: 'PLACED'
     });
-    expect(update).toEqual({ $set: { orderStatus: 'CANCELLED' }, $push: { statusHistory: entry } });
+    expect(update).toEqual({
+      $set: { orderStatus: 'CANCELLED' },
+      $push: {
+        statusHistory: {
+          ...entry,
+          previousStatus: 'PLACED',
+          newStatus: 'CANCELLED'
+        }
+      }
+    });
     expect(options).toEqual({ new: true });
   });
 });

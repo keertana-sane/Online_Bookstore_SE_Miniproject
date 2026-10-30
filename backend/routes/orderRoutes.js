@@ -9,7 +9,7 @@ const { customerIdOf } = require('./cartRoutes');
  *     504 PAYMENT_TIMEOUT (retry with the same key)
  *   GET   /orders                  own order history, newest first       200 { orders: [] }
  *   GET   /orders/:orderId         own order detail and status           200, 404 ORDER_NOT_FOUND
- *   PATCH /orders/:orderId/cancel  cancel own PLACED order               200, 404, 409 CANCEL_NOT_ALLOWED
+ *   PATCH /orders/:orderId/cancel  cancel own PLACED order               200, 404, 409 INVALID_ORDER_STATUS_TRANSITION
  *
  * Mount under the /api/v1 base path, like the cart router.
  */

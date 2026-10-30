@@ -36,6 +36,19 @@ describe('payment adapter with the mock payment service (FR-016, NFR-006)', () =
     }
   });
 
+  test('the adapter forwards only the reference and amount to the payment client', async () => {
+    const charge = jest.fn().mockResolvedValue({ status: 'SUCCESS' });
+    const adapter = createPaymentAdapter({ client: { charge } });
+    await adapter.authorize({
+      paymentRef: REF,
+      amount: 100,
+      cardNumber: '4111111111111111',
+      cvv: '123'
+    });
+
+    expect(charge).toHaveBeenCalledWith({ paymentRef: REF, amount: 100 });
+  });
+
   test('a late failure after the timeout does not crash the process', async () => {
     const client = {
       charge: () => new Promise((_, reject) => setTimeout(() => reject(new Error('late')), 60))

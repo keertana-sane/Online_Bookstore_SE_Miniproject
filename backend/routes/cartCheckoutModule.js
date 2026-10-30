@@ -10,6 +10,7 @@ const { createPaymentAdapter } = require('../services/paymentAdapter');
 const { createMockPaymentService } = require('../mock-payment/mockPaymentService');
 const { createCartRouter } = require('./cartRoutes');
 const { createOrderRouter } = require('./orderRoutes');
+const { createAdminOrderRouter } = require('./adminOrderRoutes');
 
 /**
  * The Book model belongs to the catalog. The running server already registers it on
@@ -37,7 +38,7 @@ function getBookModel(mongoose) {
  * Set MOCK_PAYMENT_MODE to success (default), decline, timeout or timeout-once to
  * demonstrate each payment outcome.
  */
-function createCartCheckoutRouter({ authenticate, mongooseImpl = require('mongoose') }) {
+function createCartCheckoutRouter({ authenticate, authenticateAdmin, mongooseImpl = require('mongoose') }) {
   const paymentAdapter = createPaymentAdapter({
     client: createMockPaymentService(),
     timeoutMs: 5000 // SAD 4.4: payment service must answer within 5 s
@@ -53,6 +54,9 @@ function createCartCheckoutRouter({ authenticate, mongooseImpl = require('mongoo
   const router = express.Router();
   router.use(createCartRouter({ cartService, authenticate }));
   router.use(createOrderRouter({ orderService, authenticate }));
+  if (authenticateAdmin) {
+    router.use(createAdminOrderRouter({ orderService, authenticate: authenticateAdmin }));
+  }
   return router;
 }
 

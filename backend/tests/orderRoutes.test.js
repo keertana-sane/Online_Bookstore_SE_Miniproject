@@ -77,6 +77,14 @@ describe('POST /api/v1/orders (API-09)', () => {
     res = await request(ctx.app).post('/api/v1/orders').set(AUTH).set('Idempotency-Key', KEY).send({}).expect(422);
     expect(res.body.error.details[0].field).toBe('shippingAddress');
 
+    res = await request(ctx.app)
+      .post('/api/v1/orders')
+      .set(AUTH)
+      .set('Idempotency-Key', KEY)
+      .send({ shippingAddress: '<script>alert(1)</script>' })
+      .expect(422);
+    expect(res.body.error.details[0].field).toBe('shippingAddress');
+
     const empty = buildApp();
     res = await request(empty.app).post('/api/v1/orders').set(AUTH).set('Idempotency-Key', KEY).send({ shippingAddress: ADDRESS }).expect(422);
     expect(res.body.error.code).toBe('CART_EMPTY');

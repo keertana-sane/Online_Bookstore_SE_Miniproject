@@ -1,7 +1,8 @@
 const crypto = require('crypto');
 const AppError = require('../utils/AppError');
 const { toCents, fromCents } = require('../utils/money');
-const { validationError } = require('../utils/validators');
+const { isObjectId, validateText, validationError } = require('../utils/validators');
+const { ORDER_STATUSES } = require('../models/Order');
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_ADDRESS = 300; // SRS Appendix B: shipping_address length 300
@@ -49,6 +50,8 @@ function toDetail(order) {
     shippingAddress: order.shippingAddress,
     statusHistory: order.statusHistory.map((h) => ({
       status: h.status,
+      previousStatus: h.previousStatus,
+      newStatus: h.newStatus,
       at: h.at,
       by: h.actor === 'system' ? 'system' : h.actor === order.customerId ? 'you' : 'staff'
     }))
@@ -78,14 +81,7 @@ function createOrderService({
   }
 
   function validateAddress(address) {
-    const trimmed = typeof address === 'string' ? address.trim() : '';
-    if (trimmed.length < 1 || trimmed.length > MAX_ADDRESS) {
-      throw validationError(
-        'shippingAddress',
-        `shippingAddress is required and must be 1 to ${MAX_ADDRESS} characters`
-      );
-    }
-    return trimmed;
+    return validateText(address, 'shippingAddress', MAX_ADDRESS);
   }
 
   async function persistOrder(data) {
@@ -263,21 +259,28 @@ function createOrderService({
    */
   async function cancelOrder(customerId, orderId) {
     const order = await findOwnOrder(customerId, orderId);
-    const notAllowed = () =>
+    const invalidTransition = () =>
       new AppError(
         409,
-        'CANCEL_NOT_ALLOWED',
-        'Only an order that is still PLACED can be cancelled',
+        'INVALID_ORDER_STATUS_TRANSITION',
+        `Invalid order status transition: ${order.orderStatus} -> CANCELLED`,
         [{ orderStatus: order.orderStatus }]
       );
-    if (order.orderStatus !== 'PLACED') throw notAllowed();
+    if (order.orderStatus !== 'PLACED') throw invalidTransition();
 
     const cancelled = await orderRepo.transitionStatus(customerId, orderId, 'PLACED', 'CANCELLED', {
       status: 'CANCELLED',
       actor: customerId,
       at: now()
     });
-    if (!cancelled) throw notAllowed(); // lost the race: already cancelled or moved on
+    if (!cancelled) {
+      throw new AppError(
+        409,
+        'CANCEL_NOT_ALLOWED',
+        'Only an order that is still PLACED can be cancelled',
+        [{ orderStatus: 'PLACED' }]
+      );
+    } // lost the race: already cancelled or moved on
 
     for (const item of order.items) {
       await bookRepo.releaseStock(item.bookId, item.quantity); // restore reserved stock
@@ -285,7 +288,41 @@ function createOrderService({
     return toDetail(cancelled);
   }
 
-  return { placeOrder, listOrders, getOrder, cancelOrder };
+  async function listAdminOrders(status) {
+    if (status !== undefined && !ORDER_STATUSES.includes(status)) {
+      throw validationError('status', 'status must be one of ' + ORDER_STATUSES.join(', '));
+    }
+    const orders = await orderRepo.listAll(status);
+    return { orders: orders.map(toSummary) };
+  }
+
+  async function updateAdminOrderStatus(actorId, orderId, status) {
+    if (!isObjectId(orderId)) {
+      throw validationError('orderId', 'orderId must be a valid id');
+    }
+    if (!ORDER_STATUSES.includes(status)) {
+      throw validationError('status', 'status must be one of ' + ORDER_STATUSES.join(', '));
+    }
+
+    const order = await orderRepo.findById(orderId);
+    if (!order) throw new AppError(404, 'ORDER_NOT_FOUND', 'Order not found');
+
+    const updated = await orderRepo.transitionStatusForAdmin(orderId, order.orderStatus, status, {
+      actor: String(actorId),
+      at: now()
+    });
+    if (!updated) {
+      const current = await orderRepo.findById(orderId);
+      throw new AppError(
+        409,
+        'INVALID_ORDER_STATUS_TRANSITION',
+        `Invalid order status transition: ${current ? current.orderStatus : order.orderStatus} -> ${status}`
+      );
+    }
+    return toDetail(updated);
+  }
+
+  return { placeOrder, listOrders, getOrder, cancelOrder, listAdminOrders, updateAdminOrderStatus };
 }
 
 module.exports = { createOrderService, toResponse, toSummary, toDetail };

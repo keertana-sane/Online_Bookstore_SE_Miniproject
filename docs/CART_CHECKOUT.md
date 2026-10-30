@@ -25,7 +25,9 @@ Staff accounts cannot use the cart or orders (the API answers 403).
 | API-09 | `POST /orders` `{shippingAddress}` + header `Idempotency-Key: <UUID>` | 201 (200 on replay) | 401, 402 PAYMENT_DECLINED, 409 OUT_OF_STOCK, 422 CART_EMPTY / VALIDATION_ERROR, 504 PAYMENT_TIMEOUT |
 | API-10 | `GET /orders` | 200 `{orders: [...]}` (empty list if none) | 401 |
 | API-11 | `GET /orders/:orderId` | 200 order with `items`, `total`, `shippingAddress`, `statusHistory` | 401, 404 ORDER_NOT_FOUND |
-| API-12 | `PATCH /orders/:orderId/cancel` | 200 cancelled order | 401, 404 ORDER_NOT_FOUND, 409 CANCEL_NOT_ALLOWED |
+| API-12 | `PATCH /orders/:orderId/cancel` | 200 cancelled order | 401, 404 ORDER_NOT_FOUND, 409 INVALID_ORDER_STATUS_TRANSITION |
+| API-13 | `GET /admin/orders?status=<status>` | 200 `{orders: [...]}`; status filter is optional | 401, 403, 422 |
+| API-14 | `PATCH /admin/orders/:orderId/status` `{status}` | 200 updated order | 401, 403, 404 ORDER_NOT_FOUND, 409 INVALID_ORDER_STATUS_TRANSITION, 422 |
 
 Errors use the SAD envelope `{ "error": { "code", "message", "details" } }`.
 

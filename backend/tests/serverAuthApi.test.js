@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const request = require('supertest');
 const { mountAuthApi } = require('../../server/authApi');
 const { errorHandler } = require('../../server/errorHandler');
+const { sanitizeInput } = require('../middleware/sanitizeInput');
 
 const JWT_SECRET = 'test-secret-for-server-auth-api';
 
@@ -35,16 +36,18 @@ function createUserRepo() {
   };
 }
 
-function createApp(userRepo) {
+function createApp(userRepo, securityLogger = () => {}) {
   const app = express();
   app.use(express.json());
+  app.use(sanitizeInput);
   mountAuthApi({
     app,
     expressImpl: express,
     jwtSecret: JWT_SECRET,
     bcryptImpl: bcrypt,
     jwtImpl: jwt,
-    userRepo
+    userRepo,
+    securityLogger
   });
 
   app.get('/api/v1/admin/books', (req, res) => res.json({ books: [] }));

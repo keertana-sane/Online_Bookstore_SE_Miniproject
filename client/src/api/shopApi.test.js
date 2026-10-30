@@ -89,6 +89,30 @@ describe('shopApi: orders', () => {
   });
 });
 
+describe('shopApi: admin orders', () => {
+  it('lists admin orders and optionally filters by status', async () => {
+    const { impl, calls } = fakeFetch(200, { orders: [] });
+    const api = apiWith(impl);
+
+    await api.listAdminOrders();
+    await api.listAdminOrders('PROCESSING');
+
+    expect(calls.map((c) => [c.options.method, c.url])).toEqual([
+      ['GET', '/api/v1/admin/orders'],
+      ['GET', '/api/v1/admin/orders?status=PROCESSING']
+    ]);
+  });
+
+  it('updates an admin order status with the JWT and requested status', async () => {
+    const { impl, calls } = fakeFetch(200, {});
+    await apiWith(impl).updateAdminOrderStatus('o 1', 'PROCESSING');
+
+    expect(calls[0].url).toBe('/api/v1/admin/orders/o%201/status');
+    expect(calls[0].options.method).toBe('PATCH');
+    expect(JSON.parse(calls[0].options.body)).toEqual({ status: 'PROCESSING' });
+  });
+});
+
 describe('shopApi: errors', () => {
   it('turns the standard error envelope into an ApiError', async () => {
     const { impl } = fakeFetch(409, {
