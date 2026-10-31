@@ -145,6 +145,9 @@ jobs:
         working-directory: server
         run: npm ci
 
+      - name: Install shared backend module dependencies
+        run: npm ci --prefix backend
+
       - name: Start API server
         working-directory: server
         env:
