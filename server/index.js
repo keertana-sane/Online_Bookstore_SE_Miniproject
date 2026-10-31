@@ -99,20 +99,21 @@ app.get("/", (req, res) => {
     message: "Online Bookstore API is running!",
   });
 });
-<<<<<<< HEAD
-  // Health check (BK-32)
-  const healthHandler = (req, res) => {
-=======
-  // Health check
-  app.get("/api/health", (req, res, next) => {
->>>>>>> origin/main
+// Health check (BK-32)
+const healthHandler = (req, res, next) => {
   const connected = mongoose.connection.readyState === 1;
 
   if (!connected) {
-    return next(new AppError(503, "SERVICE_UNAVAILABLE", "Database is disconnected."));
+    return next(
+      new AppError(
+        503,
+        "SERVICE_UNAVAILABLE",
+        "Database is disconnected."
+      )
+    );
   }
 
-  res.json({
+  res.status(200).json({
     status: "OK",
     application: "Online Bookstore",
     database: "Connected",
