@@ -1,0 +1,43 @@
+
+ RUN  v5.0.5 client
+      Coverage enabled with v8
+
+
+ Test Files  5 passed (5)
+      Tests  59 passed (59)
+   Start at  09:55:52
+   Duration  10.68s (tests 42%, environment 42%, import 13%, worker 3%, transform 1%)
+
+    Isolate  5 workers spawned · ~890ms startup each (spawn + environment, per file)
+             at least ~3.56s faster with isolate: false — reuses workers across files instead of one per file
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   51.64 |    42.64 |   54.96 |   50.76 |                   
+ src               |       0 |        0 |       0 |       0 |                   
+  App.jsx          |       0 |        0 |       0 |       0 | 15-954            
+  main.jsx         |       0 |      100 |     100 |       0 | 6                 
+ src/api           |   70.68 |    76.31 |   73.68 |   69.09 |                   
+  authApi.js       |   15.38 |    33.33 |       0 |   15.38 | 7-39              
+  shopApi.js       |   86.66 |    84.37 |    87.5 |   85.71 | 24-27,35-37       
+ src/components    |       0 |        0 |       0 |       0 |                   
+  AuthDialog.jsx   |       0 |        0 |       0 |       0 | 5-131             
+ ...mponents/admin |    97.5 |    78.04 |   91.66 |     100 |                   
+  ...rdersPage.jsx |    97.5 |    78.04 |   91.66 |     100 | ...3,79,85-94,100 
+ ...omponents/shop |   89.67 |    79.83 |   96.15 |   93.88 |                   
+  CartPage.jsx     |   95.12 |    92.98 |    92.3 |   96.96 | 56                
+  CheckoutPage.jsx |   96.66 |    86.56 |     100 |     100 | ...2,71-74,77,158 
+  ...firmation.jsx |      75 |     62.5 |     100 |     100 | 9-29              
+  OrdersPage.jsx   |   98.27 |    85.71 |     100 |   98.18 | 25                
+  errors.js        |    65.9 |    57.62 |   83.33 |      75 | 23-35,53,71-75,91 
+  format.js        |   83.33 |    66.66 |     100 |     100 | 11                
+-------------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 51.64% ( 298/577 )
+Branches     : 42.64% ( 255/598 )
+Functions    : 54.96% ( 83/151 )
+Lines        : 50.76% ( 267/526 )
+================================================================================
