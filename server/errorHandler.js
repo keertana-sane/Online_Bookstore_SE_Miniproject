@@ -1,3 +1,7 @@
+// 5xx errors whose code and message are written for the client (SAD API-09: 504 PAYMENT_TIMEOUT).
+// Every other 5xx stays generic so no internal detail leaks.
+const PUBLIC_SERVER_ERROR_CODES = new Set(["PAYMENT_TIMEOUT"]);
+
 function errorHandler(err, req, res, next) {
   if (res.headersSent) {
     return next(err);
@@ -17,8 +21,10 @@ function errorHandler(err, req, res, next) {
     });
   }
 
+  const isPublicServerError =
+    status === 504 && typeof error.code === "string" && PUBLIC_SERVER_ERROR_CODES.has(error.code);
   const code =
-    status < 500 && typeof error.code === "string"
+    (status < 500 || isPublicServerError) && typeof error.code === "string"
       ? error.code
       : status === 413
         ? "PAYLOAD_TOO_LARGE"
@@ -29,7 +35,7 @@ function errorHandler(err, req, res, next) {
             : "INTERNAL_ERROR";
   const payload = {
     code,
-    message: status < 500 ? error.message || "Request failed" : "Something went wrong"
+    message: status < 500 || isPublicServerError ? error.message || "Request failed" : "Something went wrong"
   };
   if (Array.isArray(error.details)) {
     payload.details = error.details;
