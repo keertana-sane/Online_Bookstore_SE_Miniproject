@@ -1,0 +1,322 @@
+[
+  {
+    "id": "TC-CART-01",
+    "title": "Add an in-stock book to cart",
+    "expected": "Cart has 1 line with quantity 1",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ POST /cart/items returned 200; ✔ cart has 1 line, quantity 1",
+    "durationMs": 45,
+    "ranAt": "2026-11-05T04:22:24.570Z"
+  },
+  {
+    "id": "TC-CART-02",
+    "title": "Reject out-of-stock book",
+    "expected": "409 OUT_OF_STOCK; cart unchanged",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ returned 409 OUT_OF_STOCK; ✔ cart has 0 lines afterwards",
+    "durationMs": 12,
+    "ranAt": "2026-11-05T04:22:24.570Z"
+  },
+  {
+    "id": "TC-CART-03",
+    "title": "Cart requires authentication",
+    "expected": "401 UNAUTHORIZED",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ returned 401 UNAUTHORIZED; ✔ tampered token on GET /cart returned 401",
+    "durationMs": 7,
+    "ranAt": "2026-11-05T04:22:24.570Z"
+  },
+  {
+    "id": "TC-CART-04",
+    "title": "Update item quantity",
+    "expected": "Line quantity becomes 3; total updated",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ PATCH returned 200; ✔ quantity is 3; ✔ total is 300",
+    "durationMs": 30,
+    "ranAt": "2026-11-05T04:22:24.570Z"
+  },
+  {
+    "id": "TC-CART-05",
+    "title": "Quantity boundaries rejected",
+    "expected": "0 and -1 give 422; 6 gives 409; 5 accepted",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ quantity 0 returned 422 VALIDATION_ERROR; ✔ quantity -1 returned 422 VALIDATION_ERROR; ✔ quantity 6 returned 409 OUT_OF_STOCK; ✔ quantity 5 returned 200",
+    "durationMs": 38,
+    "ranAt": "2026-11-05T04:22:24.570Z"
+  },
+  {
+    "id": "TC-CART-06",
+    "title": "Remove an item",
+    "expected": "Only the other item remains; total recalculated",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ DELETE returned 200; ✔ 1 line left; ✔ total is 25",
+    "durationMs": 41,
+    "ranAt": "2026-11-05T04:22:24.570Z"
+  },
+  {
+    "id": "TC-CART-07",
+    "title": "Cart total equals sum of price x quantity",
+    "expected": "Total = 1248.50 (two decimal places)",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ total is 1248.50",
+    "durationMs": 33,
+    "ranAt": "2026-11-05T04:22:24.570Z"
+  },
+  {
+    "id": "TC-CART-08",
+    "title": "Empty cart total is zero",
+    "expected": "Total = 0.00",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ status 200, total 0.00, 0 lines",
+    "durationMs": 5,
+    "ranAt": "2026-11-05T04:22:24.570Z"
+  },
+  {
+    "id": "TC-CART-09",
+    "title": "Disabled book in the cart is flagged, left out of the total and blocks checkout (new in Part 3)",
+    "expected": "Line available=false, total excludes it; POST /orders gives 409 OUT_OF_STOCK; no order",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ book disabled (200); ✔ disabled line available=false; ✔ total is 100.00 (disabled book excluded); ✔ checkout returned 409 OUT_OF_STOCK; ✔ orders before 0, after 0",
+    "durationMs": 52,
+    "ranAt": "2026-11-05T04:22:24.570Z"
+  },
+  {
+    "id": "TC-ORD-01",
+    "title": "Reject checkout with empty cart",
+    "expected": "422 CART_EMPTY; no order",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ returned 422 CART_EMPTY; ✔ orders before 0, after 0",
+    "durationMs": 13,
+    "ranAt": "2026-11-05T04:22:24.570Z"
+  },
+  {
+    "id": "TC-ORD-02",
+    "title": "Reject checkout with missing shipping address",
+    "expected": "422 VALIDATION_ERROR naming shippingAddress; no order",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ address \"\" returned 422 VALIDATION_ERROR field=shippingAddress; ✔ address \"   \" returned 422 VALIDATION_ERROR field=shippingAddress; ✔ address undefined returned 422 VALIDATION_ERROR field=shippingAddress; ✔ stock unchanged (5)",
+    "durationMs": 28,
+    "ranAt": "2026-11-05T04:22:24.570Z"
+  },
+  {
+    "id": "TC-ORD-03",
+    "title": "Shipping address length boundary",
+    "expected": "300 accepted; 301 rejected with 422",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ 301 characters returned 422 VALIDATION_ERROR; ✔ 300 characters returned 201",
+    "durationMs": 33,
+    "ranAt": "2026-11-05T04:22:24.570Z"
+  },
+  {
+    "id": "TC-ORD-04",
+    "title": "Successful checkout creates order",
+    "expected": "201; PLACED, SUCCESS, orderNumber present; stock reduced; cart emptied",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ returned 201; ✔ status PLACED, payment SUCCESS; ✔ orderNumber ORD-20261105-5AB43FDA; ✔ total 998.00; ✔ stock is 3 (5 - 2); ✔ cart emptied",
+    "durationMs": 33,
+    "ranAt": "2026-11-05T04:22:24.570Z"
+  },
+  {
+    "id": "TC-ORD-05",
+    "title": "Order numbers are unique",
+    "expected": "Two different orderNumber values",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ statuses 201, 201; ✔ ORD-20261105-DDFDB456 vs ORD-20261105-20D15E46",
+    "durationMs": 42,
+    "ranAt": "2026-11-05T04:22:24.570Z"
+  },
+  {
+    "id": "TC-ORD-08",
+    "title": "Item sold out between cart and checkout",
+    "expected": "409 OUT_OF_STOCK; no order for the late customer",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ first customer returned 201; ✔ second customer returned 409 OUT_OF_STOCK; ✔ second customer's orders before 4, after 4; ✔ stock is 0",
+    "durationMs": 70,
+    "ranAt": "2026-11-05T04:22:24.570Z"
+  },
+  {
+    "id": "TC-ORD-09",
+    "title": "Concurrent checkout of last copy (10 rounds)",
+    "expected": "Exactly one order succeeds, the other gets 409; stock never negative",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ 10/10 rounds gave one 201 and one 409 with stock 0 (201/409 stock 0 | 201/409 stock 0 | 201/409 stock 0 | 201/409 stock 0 | 201/409 stock 0 | 201/409 stock 0 | 201/409 stock 0 | 201/409 stock 0 | 201/409 stock 0 | 201/409 stock 0)",
+    "durationMs": 495,
+    "ranAt": "2026-11-05T04:22:24.570Z"
+  },
+  {
+    "id": "TC-ORD-11",
+    "title": "Staff accounts cannot use the cart or orders (new in Part 3)",
+    "expected": "403 FORBIDDEN on cart and orders",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ GET /api/v1/cart as ADMIN_STAFF returned 403 FORBIDDEN; ✔ GET /api/v1/orders as ADMIN_STAFF returned 403 FORBIDDEN; ✔ POST /api/v1/orders as ADMIN_STAFF returned 403 FORBIDDEN",
+    "durationMs": 10,
+    "ranAt": "2026-11-05T04:22:24.570Z"
+  },
+  {
+    "id": "TC-ORD-12",
+    "title": "Idempotency-Key must be a UUID (new in Part 3)",
+    "expected": "422 VALIDATION_ERROR for missing or malformed key; no order",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ key undefined returned 422 VALIDATION_ERROR; ✔ key \"abc\" returned 422 VALIDATION_ERROR; ✔ key \"1234\" returned 422 VALIDATION_ERROR; ✔ stock unchanged",
+    "durationMs": 35,
+    "ranAt": "2026-11-05T04:22:24.570Z"
+  },
+  {
+    "id": "TC-ORD-14",
+    "title": "Tampered total in the request body is ignored (new in Part 3)",
+    "expected": "Order total is computed by the server",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ returned 201, total 400.00 (cart total 400.00)",
+    "durationMs": 29,
+    "ranAt": "2026-11-05T04:22:24.570Z"
+  },
+  {
+    "id": "TC-TRK-07",
+    "title": "Customer with no orders sees empty history",
+    "expected": "200 with empty list",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ returned 200, 0 orders",
+    "durationMs": 5,
+    "ranAt": "2026-11-05T04:22:24.570Z"
+  },
+  {
+    "id": "TC-TRK-08",
+    "title": "Order history requires authentication",
+    "expected": "401 UNAUTHORIZED",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ GET /api/v1/orders returned 401 UNAUTHORIZED; ✔ GET /api/v1/orders/000000000000000000000000 returned 401 UNAUTHORIZED; ✔ PATCH /api/v1/orders/000000000000000000000000/cancel returned 401 UNAUTHORIZED",
+    "durationMs": 6,
+    "ranAt": "2026-11-05T04:22:24.570Z"
+  },
+  {
+    "id": "TC-TRK-01",
+    "title": "Order history lists own orders, newest first, with status (API)",
+    "expected": "Own 3 orders, newest first, each with status",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ 3 orders returned; ✔ newest first; ✔ each has a status and number; ✔ another customer's list does not contain them",
+    "durationMs": 155,
+    "ranAt": "2026-11-05T04:22:24.570Z"
+  },
+  {
+    "id": "TC-TRK-02",
+    "title": "View single order detail",
+    "expected": "200; items, total, status and statusHistory shown",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ returned 200; ✔ items 1, total 30.00; ✔ status PLACED; ✔ statusHistory [\"PLACED\"]",
+    "durationMs": 4,
+    "ranAt": "2026-11-05T04:22:24.570Z"
+  },
+  {
+    "id": "TC-TRK-03",
+    "title": "Customer cannot read another customer's order",
+    "expected": "404 ORDER_NOT_FOUND; no order data leaked",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ detail returned 404 ORDER_NOT_FOUND; ✔ response has no order data; ✔ cancel returned 404; ✔ owner still sees PLACED; ✔ malformed id returned 404",
+    "durationMs": 17,
+    "ranAt": "2026-11-05T04:22:24.570Z"
+  },
+  {
+    "id": "TC-TRK-05",
+    "title": "Customer cancels own PLACED order",
+    "expected": "200; status CANCELLED; stock restored",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ stock after order 3; ✔ returned 200 CANCELLED; ✔ stock after cancel 5; ✔ history PLACED>CANCELLED",
+    "durationMs": 32,
+    "ranAt": "2026-11-05T04:22:24.570Z"
+  },
+  {
+    "id": "TC-TRK-06",
+    "title": "Customer cannot cancel after PROCESSING",
+    "expected": "409; status unchanged (code is INVALID_ORDER_STATUS_TRANSITION since the Sprint 2 state machine)",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ staff moved it to PROCESSING (200); ✔ cancel returned 409 INVALID_ORDER_STATUS_TRANSITION; ✔ status still PROCESSING; ✔ stock not restored (4)",
+    "durationMs": 40,
+    "ranAt": "2026-11-05T04:22:24.570Z"
+  },
+  {
+    "id": "TC-TRK-09",
+    "title": "Cancelling twice restores stock once (new in Part 3)",
+    "expected": "Second cancel 409; stock back to original exactly once",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ first cancel 200; ✔ second cancel 409 INVALID_ORDER_STATUS_TRANSITION; ✔ stock 5 (not 7)",
+    "durationMs": 39,
+    "ranAt": "2026-11-05T04:22:24.570Z"
+  },
+  {
+    "id": "TC-TRK-10",
+    "title": "Two cancels at the same moment restore stock once, 10 rounds (new in Part 3)",
+    "expected": "One 200 and one 409 per round; stock restored once",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ 10/10 rounds correct (200/409 stock 5 | 200/409 stock 5 | 200/409 stock 5 | 200/409 stock 5 | 200/409 stock 5 | 200/409 stock 5 | 200/409 stock 5 | 200/409 stock 5 | 200/409 stock 5 | 200/409 stock 5)",
+    "durationMs": 325,
+    "ranAt": "2026-11-05T04:22:24.570Z"
+  },
+  {
+    "id": "TC-TRK-11",
+    "title": "Status machine blocks invalid staff transitions (new in Part 3)",
+    "expected": "PLACED to DELIVERED and CANCELLED to PROCESSING give 409; PLACED to PROCESSING to SHIPPED to DELIVERED works",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ PLACED -> DELIVERED returned 409 INVALID_ORDER_STATUS_TRANSITION; ✔ PROCESSING/SHIPPED/DELIVERED returned 200/200/200; ✔ DELIVERED -> PROCESSING returned 409; ✔ customer token on admin route returned 403",
+    "durationMs": 53,
+    "ranAt": "2026-11-05T04:22:24.570Z"
+  },
+  {
+    "id": "TC-ORD-06",
+    "title": "Declined payment creates no confirmed order",
+    "expected": "402 PAYMENT_DECLINED; order CANCELLED with paymentStatus FAILED; stock restored; cart kept",
+    "phase": "decline",
+    "result": "Pass",
+    "actual": "✔ returned 402 PAYMENT_DECLINED; ✔ stock restored (5); ✔ cart kept (1 line, quantity 2); ✔ database holds 1 FAILED order(s), status CANCELLED; ✔ database holds 0 confirmed orders",
+    "durationMs": 76,
+    "ranAt": "2026-11-05T04:22:31.571Z"
+  },
+  {
+    "id": "TC-ORD-13",
+    "title": "A declined payment is not shown in order history or detail (new in Part 3)",
+    "expected": "History empty; no confirmed order visible",
+    "phase": "decline",
+    "result": "Pass",
+    "actual": "✔ history has 0 orders; ✔ a decline happened in TC-ORD-06",
+    "durationMs": 17,
+    "ranAt": "2026-11-05T04:22:31.571Z"
+  },
+  {
+    "id": "TC-ORD-07",
+    "title": "Retry after payment timeout does not duplicate order",
+    "expected": "First call 504 PAYMENT_TIMEOUT with no order; retry gives exactly one order; third call returns the same order (200)",
+    "phase": "timeout-once",
+    "result": "Pass",
+    "actual": "✔ first call returned 504 PAYMENT_TIMEOUT after 5019 ms; ✔ no order after the timeout; ✔ stock released (5); ✔ retry returned 201; ✔ third call returned 200, same order true; ✔ exactly 1 order in history; ✔ stock reduced once (4); ✔ database holds 1 order(s) for this customer",
+    "durationMs": 5113,
+    "ranAt": "2026-11-05T04:22:43.601Z"
+  }
+]

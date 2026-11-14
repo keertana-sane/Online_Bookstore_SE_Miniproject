@@ -1,0 +1,47 @@
+[
+  {
+    "id": "TC-TRK-07-UI",
+    "title": "New customer sees \"No orders yet\" on screen",
+    "expected": "Message \"No orders yet\" shown",
+    "phase": "ui",
+    "result": "Pass",
+    "actual": "✔ \"No orders yet\" is visible",
+    "ranAt": "2026-11-05T04:24:50.648Z"
+  },
+  {
+    "id": "TC-ORD-10",
+    "title": "Checkout flow on screen: catalog, cart, checkout, confirmation",
+    "expected": "Confirmation shows unique order number, status Placed and total",
+    "phase": "ui",
+    "result": "Pass",
+    "actual": "✔ book is in the cart; ✔ Place order is disabled while the address is empty; ✔ order number ORD-20261105-0755BF29; ✔ status Placed shown; ✔ total ₹499.00 shown",
+    "ranAt": "2026-11-05T04:24:50.648Z"
+  },
+  {
+    "id": "TC-TRK-01-UI",
+    "title": "Order history on screen lists the order and its status",
+    "expected": "Order number and status appear in My orders",
+    "phase": "ui",
+    "result": "Pass",
+    "actual": "✔ ORD-20261105-0755BF29 listed; ✔ status Placed shown",
+    "ranAt": "2026-11-05T04:24:50.648Z"
+  },
+  {
+    "id": "TC-TRK-05-UI",
+    "title": "Cancel a PLACED order on screen",
+    "expected": "Confirmation step, then Cancelled and books returned to stock",
+    "phase": "ui",
+    "result": "Pass",
+    "actual": "✔ cancelled message shown; ✔ stock back to 5",
+    "ranAt": "2026-11-05T04:24:50.648Z"
+  },
+  {
+    "id": "TC-UI-ERRORS",
+    "title": "No JavaScript errors in the browser during the run",
+    "expected": "Zero console or page errors",
+    "phase": "ui",
+    "result": "Pass",
+    "actual": "✔ no console or page errors",
+    "ranAt": "2026-11-05T04:24:50.648Z"
+  }
+]
