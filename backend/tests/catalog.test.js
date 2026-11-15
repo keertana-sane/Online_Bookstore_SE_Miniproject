@@ -236,6 +236,17 @@ describe('TC-CAT: Catalog API', () => {
     expect(response.body.books[0].title).toBe('Learning JavaScript');
   });
 
+  test('returns markup in a search query as JSON data, not executable HTML', async () => {
+    const query = '<script>alert(1)</script>';
+    const response = await request(app)
+      .get(`/api/books?search=${encodeURIComponent(query)}`)
+      .expect(200);
+
+    expect(response.headers['content-type']).toMatch(/application\/json/);
+    expect(response.body.search).toBe(query);
+    expect(response.body.books).toHaveLength(0);
+  });
+
   test('TC-CAT-03: search by author', async () => {
     const response = await request(app).get('/api/books?search=neha');
 
