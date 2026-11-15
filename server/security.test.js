@@ -4,6 +4,7 @@ const express = require('express');
 const helmet = require('helmet');
 const request = require('supertest');
 const { sanitizeInput, sanitizeQuery } = require('../backend/middleware/sanitizeInput');
+const { logSecurityEvent } = require('../backend/utils/securityEvents');
 const { errorHandler } = require('./errorHandler');
 const { requestLogger } = require('./requestLogger');
 
@@ -77,4 +78,28 @@ test('malformed JSON also returns the standard client error envelope', async (t)
   assert.equal(response.body.error.code, 'BAD_REQUEST');
   assert.equal(typeof response.body.error.requestId, 'string');
   assert.equal(JSON.stringify(response.body).includes('SyntaxError'), false);
+});
+
+test('security events include timestamp, request metadata and known user id without credentials', (t) => {
+  const logged = [];
+  t.mock.method(console, 'warn', (message) => logged.push(message));
+  logSecurityEvent({
+    requestId: 'request-1',
+    ip: '127.0.0.1',
+    method: 'GET',
+    path: '/api/v1/admin/orders',
+    user: { id: 'customer-1' },
+    body: { password: 'must-not-be-logged', token: 'must-not-be-logged' }
+  }, 'unauthorized_access');
+
+  assert.equal(logged.length, 1);
+  const event = JSON.parse(logged[0]);
+  assert.equal(event.event, 'unauthorized_access');
+  assert.ok(Number.isNaN(Date.parse(event.timestamp)) === false);
+  assert.equal(event.requestId, 'request-1');
+  assert.equal(event.ip, '127.0.0.1');
+  assert.equal(event.method, 'GET');
+  assert.equal(event.path, '/api/v1/admin/orders');
+  assert.equal(event.userId, 'customer-1');
+  assert.equal(logged[0].includes('must-not-be-logged'), false);
 });
