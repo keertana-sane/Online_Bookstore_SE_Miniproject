@@ -1,0 +1,19 @@
+
+> server@1.0.0 test
+> node --test
+
+✔ book data validation accepts valid book details (2.6087ms)
+✔ book data validation rejects negative stock (0.4418ms)
+✔ book data validation rejects a zero price (0.3511ms)
+✔ security middleware strips Mongo operators and sets Helmet/request ID headers (403.7228ms)
+✔ central errors use the envelope without exposing stack details (62.6313ms)
+✔ a payment timeout keeps its SAD code PAYMENT_TIMEOUT (API-09) but other 5xx stay generic (105.5608ms)
+✔ malformed JSON also returns the standard client error envelope (47.5351ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3171.2089

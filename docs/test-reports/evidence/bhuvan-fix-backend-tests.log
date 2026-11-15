@@ -1,0 +1,12 @@
+
+> backend@1.0.0 test
+> jest --runInBand
+
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+Test Suites: 14 passed, 14 total
+Tests:       168 passed, 168 total
+Snapshots:   0 total
+Time:        46.545 s, estimated 50 s
+Ran all test suites.
