@@ -1,140 +1,206 @@
-# Test Case Document: Cart, Checkout and Order Tracking
+# Test Case Document (consolidated, project-wide)
 
-Team 15 · Online Bookstore (BookNest) · UE24CS341A Software Engineering
-Owner: B S Keertana (Test Engineer, cart and checkout) · Version 2.0 · 5 November 2026
+Team 15 · Online Bookstore (BookNest) · UE24CS341A Software Engineering · Part 3 (testing)
+Version 3.0 · consolidated 16 November 2026 · build tested: `main` at `a779478`
 
-This document replaces the test case table of the Software Test Plan v1.0 for the test cases owned by the cart and
-checkout area (TC-CART, TC-ORD, TC-TRK, TC-TST and TC-MNT-01). It updates every case to what the product does after
-Sprint 1 and Sprint 2, adds the cases that the sprints made necessary, and records the actual result of the test run
-of 5 November 2026. The reports are in this folder; see [README.md](README.md).
+This is the team's updated Test Case Document. It brings together the test cases that each member updated and ran for
+their own part of Sprint 1 and Sprint 2, with the result each member recorded. The full step-by-step cases are in each
+member's own document (section 2); this document is the one place that lists every case, its result and the open defects.
 
-## 1. What changed since Test Plan v1.0
+## 1. Summary
 
-| Change made during the sprints | Effect on the test cases |
+| Module | Owner | Cases | Pass | Partial | Not run | Source document |
+|---|---|---|---|---|---|---|
+| Cart, checkout, order tracking | B S Keertana | 36 | 36 | 0 | 0 | [cart-checkout/Test_Case_Document.md](cart-checkout/Test_Case_Document.md) |
+| Catalog, search, performance | Anushka Kumar | 18 | 18 | 0 | 0 | [Anushka_Individual_Test_Cases_Sprint_1_and_2.pdf](../Anushka_Individual_Test_Cases_Sprint_1_and_2.pdf) |
+| Authentication and security | Bhagath Naveen Mullakara | 18 | 13 | 4 | 1 | [Bhagath_Individual_Test_Cases.docx](../Bhagath_Individual_Test_Cases.docx) |
+| Admin, scaffold, CI, Docker | Bhuvan Raj H | 32 | 30 | 0 | 2 | [BhuvanRajH_Individual_Test_Cases_Sprint1_Sprint2_Formatted.docx](../BhuvanRajH_Individual_Test_Cases_Sprint1_Sprint2_Formatted.docx) |
+| **Total** | | **104** | **97** | **4** | **3** | |
+
+Pass rate of cases that were run: 97 of 101 (96.0%); 104 listed, 3 not run, 4 partly run. No case was marked Pass without
+a recorded result. Cases not run or partly run are listed in section 4 with the reason.
+
+## 2. Who updated which cases
+
+| Member | Sprint tasks | Cases |
+|---|---|---|
+| B S Keertana | BK-14 to BK-19 (Sprint 1), BK-36 to BK-41 (Sprint 2) | TC-CART-01 to 09, TC-ORD-01 to 14, TC-TRK-01 to 11, TC-TST-01, TC-MNT-01 (8 new, 13 updated; every case has an actual result) |
+| Anushka Kumar | BK-03, BK-10 to BK-13 (Sprint 1); BK-29 to BK-34 (Sprint 2) | TC-CAT-01 to 15 (catalog), TC-PERF-01 to 03 (BK-29) |
+| Bhagath Naveen Mullakara | BK-04 to BK-09, BK-23 to BK-28, BK-46 | TC-AUTH-01 to 08, TC-SEC-01 to 07 (updated from Appendix A), plus TC-DEMO-01, TC-DOC-01, TC-CI-01 |
+| Bhuvan Raj H | BK-01, BK-02, BK-20 to BK-22 (Sprint 1); BK-42 to BK-45, BK-47, BK-48 (Sprint 2) | TC-BK-01-01 to TC-BK-48-02 |
+
+## 3. All test cases and results
+
+### 3.1 Cart, checkout and order tracking (B S Keertana)
+
+Run on 5 November 2026 and again on 16 November 2026 (API cases, see the System Validation Report). Full cases: [cart-checkout/Test_Case_Document.md](cart-checkout/Test_Case_Document.md).
+
+| ID | Scenario | Result |
+|---|---|---|
+| TC-CART-01 | Add an in-stock book to cart | Pass |
+| TC-CART-02 | Reject out-of-stock book | Pass |
+| TC-CART-03 | Cart requires authentication | Pass |
+| TC-CART-04 | Update item quantity | Pass |
+| TC-CART-05 | Quantity boundaries rejected | Pass |
+| TC-CART-06 | Remove an item | Pass |
+| TC-CART-07 | Cart total equals sum of price x quantity | Pass |
+| TC-CART-08 | Empty cart total is zero | Pass |
+| TC-CART-09 | Disabled book in cart is flagged, left out of the total and blocks checkout | Pass |
+| TC-ORD-01 | Reject checkout with empty cart | Pass |
+| TC-ORD-02 | Reject checkout with missing shipping address | Pass |
+| TC-ORD-03 | Shipping address length boundary | Pass |
+| TC-ORD-04 | Successful checkout creates order | Pass |
+| TC-ORD-05 | Order numbers are unique | Pass |
+| TC-ORD-06 | Declined payment creates no confirmed order | Pass |
+| TC-ORD-07 | Retry after payment timeout does not duplicate order | Pass |
+| TC-ORD-08 | Item sold out between cart and checkout | Pass |
+| TC-ORD-09 | Concurrent checkout of last copy | Pass |
+| TC-ORD-10 | Place order end-to-end through UI | Pass |
+| TC-ORD-11 | Staff accounts cannot use the cart or orders | Pass |
+| TC-ORD-12 | Idempotency-Key must be a UUID | Pass |
+| TC-ORD-13 | A declined payment is not shown in the customer's history or detail | Pass |
+| TC-ORD-14 | Total sent by the browser is ignored | Pass |
+| TC-TRK-01 | Order history lists own orders | Pass |
+| TC-TRK-02 | View single order detail | Pass |
+| TC-TRK-03 | Customer cannot read another customer's order | Pass |
+| TC-TRK-04 | Only allowed status values accepted | Pass |
+| TC-TRK-05 | Customer cancels own PLACED order | Pass |
+| TC-TRK-06 | Customer cannot cancel after PROCESSING | Pass |
+| TC-TRK-07 | Customer with no orders sees empty history | Pass |
+| TC-TRK-08 | Order history requires authentication | Pass |
+| TC-TRK-09 | Cancelling twice restores stock once | Pass |
+| TC-TRK-10 | Two cancels at the same moment restore stock once | Pass |
+| TC-TRK-11 | Status machine blocks invalid staff transitions | Pass |
+| TC-TST-01 | Order service testable without payment service | Pass |
+| TC-MNT-01 | Business logic separated into service modules | Pass |
+
+### 3.2 Catalog, search and performance (Anushka Kumar)
+
+Executed with Postman, the browser and Apache JMeter (50 users, 10 s ramp-up, 10 loops).
+
+| ID | Scenario | Result |
+|---|---|---|
+| TC-CAT-01 | Browse catalog without login | Pass |
+| TC-CAT-02 | Search by title | Pass |
+| TC-CAT-03 | Search by author | Pass |
+| TC-CAT-04 | Search by category | Pass |
+| TC-CAT-05 | No matching search results | Pass |
+| TC-CAT-06 | Regex-like search input treated as literal text | Pass |
+| TC-CAT-07 | Page size capped at 50 | Pass |
+| TC-CAT-08 | Book details page (see note) | Pass |
+| TC-CAT-09 | Unknown book ID returns 404 | Pass |
+| TC-CAT-10 | Out-of-stock book shown as Out of stock | Pass |
+| TC-CAT-11 | Book detail API | Pass |
+| TC-CAT-12 | Invalid book ID returns 400 | Pass |
+| TC-CAT-13 | Pagination navigation, page 1 and page 2 | Pass |
+| TC-CAT-14 | Invalid page number returns 400 | Pass |
+| TC-CAT-15 | Invalid limit returns 400 | Pass |
+| TC-PERF-01 | Browse catalog, 50 users (JMeter): avg 6 ms, 0.00% errors | Pass |
+| TC-PERF-02 | Search catalog, 50 users (JMeter): avg 8 ms, 0.00% errors | Pass |
+| TC-PERF-03 | Combined: 1,000 samples, avg 7 ms, max 53 ms, 0.00% errors | Pass |
+
+Note: TC-CAT-08 (book details page) is recorded as Pass in the member's test summary; the evidence folder has the catalog and
+out-of-stock screenshots (TC-CAT-10) but no separate details-page screenshot.
+
+### 3.3 Authentication and security (Bhagath Naveen Mullakara)
+
+Automated integration tests (Supertest, in-memory repositories) plus visual capture of the dialogs. Not a live database run.
+
+| ID | Scenario | Result |
+|---|---|---|
+| TC-AUTH-01 | Register a customer; password stored as bcrypt hash | Pass |
+| TC-AUTH-02 | Duplicate email rejected (case-insensitive) | Pass |
+| TC-AUTH-03 | Email and password validation, unsafe input | Pass |
+| TC-AUTH-04 | Login returns signed one-hour JWT | Pass |
+| TC-AUTH-05 | Three wrong passwords: generic 401, events logged | Pass |
+| TC-AUTH-06 | Expired token rejected | Pass |
+| TC-AUTH-07 | Register, login, logout in the browser | Not run |
+| TC-AUTH-08 | No plaintext passwords in storage, logs or source | Partial |
+| TC-SEC-01 | Customer cannot POST admin book route; event logged | Pass |
+| TC-SEC-02 | Customer cannot PATCH admin order status; event logged | Pass |
+| TC-SEC-03 | Script-like input in address and search | Partial |
+| TC-SEC-04 | Tampered role token rejected | Pass |
+| TC-SEC-05 | No card data stored or returned | Pass |
+| TC-SEC-06 | Security log entries (time, IP, route, user ID) | Pass |
+| TC-SEC-07 | Login rate limit (11th attempt gives 429) | Pass |
+| TC-DEMO-01 | Sprint 1 demo video present (BK-09) | Partial |
+| TC-DOC-01 | Auth traceability and deviations documented (BK-28) | Partial |
+| TC-CI-01 | CI has lint and dependency audit steps (BK-46) | Pass |
+
+### 3.4 Admin, project set-up, CI and Docker (Bhuvan Raj H)
+
+Live checks against a local MongoDB, plus regression suites. See the member's document for the procedure of each case.
+
+| ID | Scenario | Result |
+|---|---|---|
+| TC-BK-01-01 | Package install and scaffold smoke check | Pass |
+| TC-BK-01-02 | Frontend build and backend syntax checks | Pass |
+| TC-BK-01-03 | Missing configuration fails fast; configured server starts | Pass |
+| TC-BK-02-01 | Workflow YAML and job structure | Pass |
+| TC-BK-02-02 | Local frontend CI-equivalent | Pass |
+| TC-BK-02-03 | Fresh-clone package regression and CI workflow | Pass |
+| TC-BK-02-04 | Actual GitHub workflow status for configured remote | Pass |
+| TC-BK-20-01 | Create book using valid fields | Pass |
+| TC-BK-20-02 | Reject book creation without authentication | Pass |
+| TC-BK-20-03 | Reject invalid price and stock | Pass |
+| TC-BK-20-04 | Edit and disable a book | Pass |
+| TC-BK-21-01 | Set stock to zero and positive quantity | Pass |
+| TC-BK-21-02 | Reject negative stock | Pass |
+| TC-BK-21-03 | Reject stock update without authentication | Pass |
+| TC-BK-22-01 | Catalog management interface renders for admin | Pass |
+| TC-BK-22-02 | Catalog management is hidden from guests/non-admin users | Pass |
+| TC-BK-22-03 | Admin creates and edits a book from catalog UI | Pass |
+| TC-BK-22-04 | Admin UI stock prompt and disable interaction | Pass |
+| TC-BK-42-01 | Allowed and rejected transition matrix | Pass |
+| TC-BK-42-02 | Invalid transition error contract | Pass |
+| TC-BK-43-01 | Admin list, status filter and invalid filter | Pass |
+| TC-BK-43-02 | Require authenticated administrator | Pass |
+| TC-BK-43-03 | Update through allowed lifecycle and verify status history | Pass |
+| TC-BK-43-04 | Reject malformed ID, missing order and terminal transition | Pass |
+| TC-BK-44-01 | Admin orders UI renders live orders and filter | Pass |
+| TC-BK-44-02 | UI terminal state and interaction/error states | Pass |
+| TC-BK-45-01 | Static Docker and Compose configuration validation | Pass |
+| TC-BK-45-02 | Docker build/up/health/persistence integration | Not run |
+| TC-BK-47-01 | Full backend and frontend regression suites | Pass |
+| TC-BK-47-02 | Verify development-freeze record | Not run |
+| TC-BK-48-01 | Verify Admin API/UI documentation against source | Pass |
+| TC-BK-48-02 | Verify deviations document captures discovered security issue | Pass |
+
+## 4. Cases not fully run
+
+| Case | Result | Reason |
+|---|---|---|
+| TC-AUTH-07 (register, login, logout in the browser) | Not run | Dialogs were captured visually; the full browser flow was not executed |
+| TC-AUTH-08 (no plaintext passwords) | Partial | Source and unit tests only; live database and log inspection not done |
+| TC-SEC-03 (script-like input) | Partial | Server responses checked; no browser execution check |
+| TC-DEMO-01 (demo video) | Partial | File presence only; playback and duration not verified |
+| TC-DOC-01 (SRS/SAD/RTM update) | Partial | Auth deviations documented; SRS and SAD not regenerated, RTM source not found |
+| TC-BK-45-02 (Docker build, up, health) | Not run | Docker is not installed on the machine used |
+| TC-BK-47-02 (development freeze record) | Not run | No freeze record or sign-off found in the repository |
+| TC-USA-01 (usability, five users) and UAT | Not run by anyone | Needs real participants; only the five-screen walkthrough (`docs/usability_walkthrough.md`) exists |
+
+## 5. Defects
+
+| ID | Module | Defect | Severity | Status |
+|---|---|---|---|---|
+| DEF-01 | Admin orders | Staff order routes (`/admin/orders`) were not mounted in the cart module, so staff could not list or update orders (found by TC-TRK-06, TC-TRK-11) | High | Fixed, regression test added, merged (PR #62) |
+| DEF-02 | Checkout | A payment timeout returned `INTERNAL_ERROR` instead of `PAYMENT_TIMEOUT` (found by TC-ORD-07) | Medium | Fixed, regression test added, merged (PR #62) |
+| DEF-03 | Security | Security-event log entries had no timestamp or user ID, although Appendix A TC-SEC-06 expects them | Medium | Fixed and retested by the auth owner (merged, PR #64) |
+| DEF-04 | Admin catalog / security | On `main`, `POST /api/books`, `PUT /api/books/:id`, `PATCH /api/books/:id/stock` and `PATCH /api/books/:id/disable` have no authentication. On 16 Nov 2026 a `POST /api/books` with no token returned 201 against a live server built from `a779478`. This breaks SEC-002 and TC-SEC-01 for the book routes. The admin test record reports 401 and 403 on a local checkout after a fix, but that fix is not on `main` | High | **Open** on `main`: the fix needs to be merged, then TC-BK-20-02, TC-BK-21-03 and TC-BK-22-02 re-run against `main` |
+
+DEF-04 note: the unit tests do not load the book routes in `server/index.js` (the server package's coverage run never imports
+it), and the auth owner's TC-SEC-01 record says the admin handler "was not called", so neither exercised the real book routes.
+The gap was found by sending a live request.
+
+## 6. Requirement coverage
+
+| Requirement area | Covered by |
 |---|---|
-| Order status machine (Sprint 2): PLACED to PROCESSING or CANCELLED, PROCESSING to SHIPPED or CANCELLED, SHIPPED to DELIVERED | TC-TRK-06 now expects `409 INVALID_ORDER_STATUS_TRANSITION` (was `CANCEL_NOT_ALLOWED`). New TC-TRK-11. |
-| Staff order endpoints (`GET /admin/orders`, `PATCH /admin/orders/:id/status`) | TC-TRK-06 can now move an order to PROCESSING through the real API. New TC-TRK-11 and TC-ORD-11. |
-| Status history entries carry `previousStatus`, `newStatus` and `actor` | TC-TRK-02 and TC-TRK-05 check the history. |
-| Declined payments are kept as CANCELLED with paymentStatus FAILED but hidden from the customer | TC-ORD-06 checks the stored record; new TC-ORD-13 checks it is hidden. |
-| A book disabled or sold out after it was added stays in the cart, flagged and left out of the total | New TC-CART-09. |
-| Checkout retry safety (`Idempotency-Key` must be a UUID); server computes the total | New TC-ORD-12 and TC-ORD-14. |
-| Cancel is one conditional update | New TC-TRK-09 and TC-TRK-10. |
-| Cart and order screens in the React app | TC-ORD-10, TC-TRK-01 and TC-TRK-07 now have exact UI steps and were run in a real browser. |
-| Order number format `ORD-YYYYMMDD-XXXXXXXX` | TC-ORD-04 and TC-ORD-05 check the format. |
-| Two defects found and fixed during testing (section 5) | TC-ORD-07 depends on DEF-02; admin steps of TC-TRK-06 and TC-TRK-11 depend on DEF-01. |
-
-Cases marked **Updated** have changed steps or expected results. Cases marked **New** are added in this version.
-**Unchanged** cases keep the Test Plan v1.0 wording and now have an actual result.
-
-## 2. How the cases were run
-
-| Level | How | Where |
-|---|---|---|
-| Unit | Jest (backend), Vitest and Testing Library (client), `node --test` (server). Services run against in-memory stand-ins and a stub payment adapter | `backend/tests`, `client/src`, `server` |
-| Integration and system (API) | Live HTTP against the real Express server, real MongoDB 8 and the real mock payment service: `backend/tests/system/systemValidation.js`, three phases for the three payment modes | evidence: `evidence/system-validation-results.json` |
-| System (UI) | Headless Chromium drives the real React app against the same server: `backend/tests/system/uiSystemValidation.js` | evidence: `evidence/ui-validation-results.json`, `evidence/screenshots/` |
-| Review | Code review checklist | section 4 |
-
-Every case below was executed on 5 November 2026. Result: **all pass after the two fixes in section 5**. Before the fixes,
-TC-TRK-06 and TC-TRK-11 (admin route) and TC-ORD-07 (error code) failed in the live run.
-
-## 3. Test cases
-
-Test data conventions: K1, K2 and so on are fresh UUID v4 keys. The address is `12 MG Road, Bengaluru 560001`. Each
-system run registers its own customers and books (titles start with `SYSTEST`), so the run can be repeated.
-
-### 3.1 Cart (UC-04)
-
-| ID | Level | Req. | Description | Precondition | Steps | Test data | Expected result | Actual result (5 Nov 2026) | Status | Change |
-|---|---|---|---|---|---|---|---|---|---|---|
-| TC-CART-01 | Unit, API | FR-006 | Add an in-stock book to cart | Logged in customer; stock 5 | `POST /cart/items` | bookId, qty 1 | 200; cart has 1 line with quantity 1 | 200; 1 line, quantity 1 | Pass | Unchanged |
-| TC-CART-02 | Unit, API | FR-006 | Reject out-of-stock book | Book stock 0 | `POST /cart/items` | qty 1 | 409 `OUT_OF_STOCK`; cart unchanged | 409 `OUT_OF_STOCK`; cart has 0 lines | Pass | Unchanged |
-| TC-CART-03 | Integration | FR-006, SEC-004 | Cart requires authentication | Not logged in | `POST /cart/items` without token; `GET /cart` with a tampered token | none | 401 `UNAUTHORIZED` | 401 `UNAUTHORIZED` for both | Pass | Updated: tampered token added |
-| TC-CART-04 | Unit, API | FR-007 | Update item quantity | Cart has 1 item (price 100) | `PATCH /cart/items/{bookId}` | qty 3, stock 5 | Line quantity 3; total 300.00 | quantity 3, total 300 | Pass | Unchanged |
-| TC-CART-05 | Unit, API | FR-007 | Quantity boundaries rejected | Cart has 1 item; stock 5 | `PATCH` with 0, -1, 6 and 5 | 0, -1, 6, 5 | 0 and -1 give 422; 6 gives 409 `OUT_OF_STOCK`; 5 accepted | 422, 422, 409 `OUT_OF_STOCK`, 200 | Pass | Unchanged |
-| TC-CART-06 | Unit, API | FR-007 | Remove an item | Cart has 2 items (40 and 25) | `DELETE /cart/items/{bookId}` | one bookId | Only the other item remains; total 25.00 | 1 line left, total 25 | Pass | Unchanged |
-| TC-CART-07 | Unit, API | FR-008 | Cart total equals sum of price x quantity | Cart empty | Add 2 x 499.00 and 1 x 250.50 | as shown | Total 1248.50 (two decimals) | 1248.50 | Pass | Unchanged |
-| TC-CART-08 | Unit, API | FR-008 | Empty cart total is zero | Cart empty | `GET /cart` | none | 200; total 0.00; no lines | 200; total 0.00; 0 lines | Pass | Unchanged |
-| TC-CART-09 | Integration | FR-006, FR-008, FR-009 | Disabled book in cart is flagged, left out of the total and blocks checkout | Cart has 2 books (100 and 50) | Staff disables the 50 book; `GET /cart`; `POST /orders` | K1 | Disabled line `available=false`; total 100.00; checkout 409 `OUT_OF_STOCK`; no order | `available=false`; total 100.00; 409 `OUT_OF_STOCK`; order count unchanged | Pass | **New** |
-
-### 3.2 Checkout and orders (UC-05)
-
-| ID | Level | Req. | Description | Precondition | Steps | Test data | Expected result | Actual result (5 Nov 2026) | Status | Change |
-|---|---|---|---|---|---|---|---|---|---|---|
-| TC-ORD-01 | Unit, API | FR-009 | Reject checkout with empty cart | Logged in; cart empty | `POST /orders` | valid address | 422 `CART_EMPTY`; no order, no payment call | 422 `CART_EMPTY`; order count unchanged | Pass | Unchanged |
-| TC-ORD-02 | Unit, API | FR-009 | Reject checkout with missing shipping address | Cart has 1 item | `POST /orders` with address empty, blank, or missing | `""`, `"   "`, none | 422 `VALIDATION_ERROR` naming `shippingAddress`; no order; stock unchanged | 422 `VALIDATION_ERROR`, field `shippingAddress`, for all three; stock 5 | Pass | Unchanged |
-| TC-ORD-03 | Unit, UI, API | FR-009, SEC-003 | Shipping address length boundary | Cart has 1 item | `POST /orders` with 300 and 301 characters; type 301 characters in the checkout form | 300 / 301 characters | 300 accepted; 301 rejected with 422; the form disables Place order and shows "300 characters or fewer" | 301: 422; 300: 201; form behaves as expected | Pass | Updated: form check added |
-| TC-ORD-04 | Integration | FR-009, FR-010, FR-016 | Successful checkout creates order | Cart 2 x 499.00; payment SUCCESS | `POST /orders` with `Idempotency-Key` | K1; valid address | 201; orderStatus PLACED; paymentStatus SUCCESS; `orderNumber` like `ORD-YYYYMMDD-XXXXXXXX`; total 998.00; stock reduced by 2; cart emptied | As expected; stock 5 to 3; cart empty | Pass | Updated: number format, total, cart |
-| TC-ORD-05 | Integration | FR-010 | Order numbers are unique | Two successful checkouts possible | Place two orders with different keys | K1, K2 | Two different `orderNumber` values | Two different numbers | Pass | Unchanged |
-| TC-ORD-06 | Integration | FR-016 | Declined payment creates no confirmed order | Payment mode `decline` | `POST /orders` | K3 | 402 `PAYMENT_DECLINED`; stored order CANCELLED with paymentStatus FAILED; stock restored; cart kept; no SUCCESS order in the database | 402; database holds a CANCELLED/FAILED order and 0 SUCCESS orders; stock 5; cart kept (quantity 2) | Pass | Updated: stored record checked in the database |
-| TC-ORD-07 | Integration | NFR-004, FR-016 | Retry after payment timeout does not duplicate order | Payment mode `timeout-once` | `POST /orders` (K4); again with K4; a third time with K4 | K4 | First call 504 `PAYMENT_TIMEOUT` after about 5 s with no order and stock released; retry 201 with exactly one order; third call 200 with the same order | 504 `PAYMENT_TIMEOUT` (5.0 s); retry 201; third call 200, same `orderId`; 1 order in history and in the database; stock reduced once | Pass | Updated: error code check (DEF-02) |
-| TC-ORD-08 | Integration | FR-009 | Item sold out between cart and checkout | Cart holds last copy; another customer buys it first | `POST /orders` by the late customer | K5 | 409 `OUT_OF_STOCK`; no payment attempted; no order | 409 `OUT_OF_STOCK`; late customer's order count unchanged; stock 0 | Pass | Unchanged. The checkout screen also names the book and links back to the cart (unit-tested) |
-| TC-ORD-09 | Integration | FR-009, FR-010 | Concurrent checkout of last copy | Stock 1; two customers have it in cart | Send both `POST /orders` at the same moment; repeat 10 times with new books | two customers, different keys | Each round: exactly one 201 and one 409; stock 0, never negative | 10 of 10 rounds: 201 + 409, stock 0 | Pass | Updated: repeated 10 times on real MongoDB |
-| TC-ORD-10 | System (UI) | FR-009, FR-010, FR-016 | Place order end-to-end through UI | Logged in customer; catalog contains the book | Type the title in the catalog search; Add to cart; open Cart; Proceed to checkout; check Place order is disabled; type the address; Place order | in-stock book (499.00); valid address | "Thank you, your order is placed" screen shows order number, status Placed, "Paid (simulated)", address, item and total 499.00; no browser errors | As expected; order number `ORD-20261105-0755BF29`; screenshots 02 to 05; no browser errors | Pass | Updated: exact UI steps |
-| TC-ORD-11 | Integration | SEC-002, FR-009 | Staff accounts cannot use the cart or orders | Logged in as ADMIN_STAFF | `GET /cart`, `GET /orders`, `POST /orders` | admin token | 403 on all three | 403, 403, 403 | Pass | **New** |
-| TC-ORD-12 | Integration | NFR-004, SEC-003 | Idempotency-Key must be a UUID | Cart has 1 item | `POST /orders` with no key, `abc` and `1234` | missing, `abc`, `1234` | 422 `VALIDATION_ERROR` each time; no order; stock unchanged | 422 `VALIDATION_ERROR` x 3; stock 5 | Pass | **New** |
-| TC-ORD-13 | Integration | FR-016, FR-012 | A declined payment is not shown in the customer's history or detail | After TC-ORD-06 | `GET /orders` | customer with one declined attempt | 200 with an empty list | 200; 0 orders | Pass | **New** |
-| TC-ORD-14 | Integration | SEC-003, FR-009 | Total sent by the browser is ignored | Cart 2 x 200.00 | `POST /orders` with a body that also contains `total: 1` and a fake item | K6 | 201; total 400.00 computed on the server | 201; total 400.00 | Pass | **New** |
-
-### 3.3 Order tracking (UC-06)
-
-| ID | Level | Req. | Description | Precondition | Steps | Test data | Expected result | Actual result (5 Nov 2026) | Status | Change |
-|---|---|---|---|---|---|---|---|---|---|---|
-| TC-TRK-01 | System (UI, API) | FR-012, FR-011 | Order history lists own orders | Customer has 3 orders | API: `GET /orders`. UI: sign in, open My orders | none | Own 3 orders, newest first, each with status; another customer's list has none of them. UI lists the order number and status | API: 3 orders, newest first, all PLACED, no overlap with another customer. UI: new order and status Placed listed (screenshot 06) | Pass | Updated: UI steps and ownership check |
-| TC-TRK-02 | Integration | FR-012 | View single order detail | Order exists | `GET /orders/{orderId}` | own orderId (3 x 10.00) | 200; items, total 30.00, address, status PLACED, `statusHistory` with the PLACED entry | As expected; history `[PLACED]` | Pass | Updated: address and history entry checked |
-| TC-TRK-03 | Integration | FR-012, SEC-002 | Customer cannot read another customer's order | Orders of customers A and B exist | As A: `GET /orders/{B's id}`, `PATCH .../cancel`, `GET /orders/not-an-id` | A's token; B's orderId | 404 `ORDER_NOT_FOUND`; no order data in the body; B's order unchanged | 404 for detail and cancel; body has no order data; B still sees PLACED; malformed id 404 | Pass | Updated: cancel and malformed id added |
-| TC-TRK-04 | Unit | FR-011 | Only allowed status values accepted | None | Create order with status `SHIPPING`; create with each of the five valid statuses | invalid enum | Model validation rejects; allowed values PLACED, PROCESSING, SHIPPED, DELIVERED, CANCELLED | `SHIPPING` rejected; all five accepted | Pass | Unchanged |
-| TC-TRK-05 | Integration, UI | Rule 6.5 | Customer cancels own PLACED order | Order PLACED (qty 2) | `PATCH /orders/{id}/cancel`. UI: open the order, Cancel order, Yes cancel order | own orderId | 200; CANCELLED; stock restored; history `PLACED, CANCELLED`. UI asks for confirmation and shows "returned to stock" | API: 200, stock 3 to 5, history `PLACED>CANCELLED`. UI: confirmation step, message shown, stock 5 | Pass | Updated: UI steps added |
-| TC-TRK-06 | Integration | Rule 6.5 | Customer cannot cancel after PROCESSING | Order PROCESSING (staff moved it) | Staff `PATCH /admin/orders/{id}/status` to PROCESSING; customer `PATCH /orders/{id}/cancel` | own orderId | 409 `INVALID_ORDER_STATUS_TRANSITION`; status stays PROCESSING; stock not restored | 409 `INVALID_ORDER_STATUS_TRANSITION`; PROCESSING; stock stayed at 4 | Pass | **Updated**: error code changed from `CANCEL_NOT_ALLOWED` (Sprint 2 state machine) |
-| TC-TRK-07 | Integration, UI | FR-012 | Customer with no orders sees empty history | New customer | `GET /orders`; open My orders in the UI | none | 200 with an empty list; UI shows "No orders yet" | 200, empty list; UI shows "No orders yet" (screenshot 01) | Pass | Unchanged |
-| TC-TRK-08 | Integration | FR-012, SEC-004 | Order history requires authentication | Not logged in | `GET /orders`, `GET /orders/{id}`, `PATCH /orders/{id}/cancel` without token | no token | 401 `UNAUTHORIZED` for all | 401 `UNAUTHORIZED` x 3 | Pass | Updated: detail and cancel added |
-| TC-TRK-09 | Integration | Rule 6.5 | Cancelling twice restores stock once | Order PLACED (qty 2, stock 3) | Cancel; cancel again | own orderId | First 200; second 409; stock 5 (not 7) | 200, then 409; stock 5 | Pass | **New** |
-| TC-TRK-10 | Integration | Rule 6.5 | Two cancels at the same moment restore stock once | Order PLACED; repeat 10 times | Send two cancels at once | own orderId | Each round: one 200 and one 409; stock 5 | 10 of 10 rounds 200 + 409, stock 5 | Pass | **New** |
-| TC-TRK-11 | Integration | FR-011, SEC-002 | Status machine blocks invalid staff transitions | Order PLACED | Staff: PLACED to DELIVERED; then PROCESSING, SHIPPED, DELIVERED in order; DELIVERED to PROCESSING; customer token on the admin route | admin and customer tokens | Skip rejected 409; the legal chain gives 200 x 3; going back 409; customer token 403 | 409; 200/200/200; 409; 403 | Pass | **New** |
-
-### 3.4 Testability and maintainability
-
-| ID | Level | Req. | Description | Precondition | Steps | Test data | Expected result | Actual result (5 Nov 2026) | Status | Change |
-|---|---|---|---|---|---|---|---|---|---|---|
-| TC-TST-01 | Unit | NFR-006 | Order service testable without payment service | No network access | Run the OrderService tests with a PaymentAdapter stub returning SUCCESS, DECLINED, TIMEOUT; run the PaymentAdapter tests | stubbed adapter | All three outcomes testable offline; tests pass in CI | `orderService.test.js` (26) and `paymentAdapter.test.js` (13) pass with no network; CI runs `npm test` on every push | Pass | Unchanged |
-| TC-MNT-01 | Review | NFR-005 | Business logic separated into service modules | Source code available | Review: no business rules in routes; service unit tests exist and pass; line coverage on services at least 70% | repository | Rules live in services; tests run in CI; at least 70% line coverage on services | Routes only parse the request and call a service (`cartRoutes.js` 61 lines, `orderRoutes.js` 55, `adminOrderRoutes.js` 32); services line coverage **95.59%** (target 70%); CI runs lint, test and build | Pass | Unchanged |
-
-Cases of the Test Plan that this document does not cover: TC-CAT (catalog), TC-AUTH, TC-SEC, TC-ADM and TC-USA-01 belong to
-other team members; TC-CAT-15 (add to cart from the book detail page) is a catalog screen case. The usability test
-TC-USA-01 needs five first-time users and was not run (see System Validation Report, section 6).
-
-## 4. Requirement traceability matrix (cart, checkout and tracking)
-
-| Requirement | Test cases | Result |
-|---|---|---|
-| FR-006 Add in-stock book to cart | TC-CART-01, 02, 03, 09 | 4 of 4 pass |
-| FR-007 Update or remove cart item | TC-CART-04, 05, 06 | 3 of 3 pass |
-| FR-008 Cart total | TC-CART-07, 08, 09 | 3 of 3 pass |
-| FR-009 Valid checkout only | TC-ORD-01, 02, 03, 04, 08, 09, 10, 11, 12, 14, TC-CART-09 | 11 of 11 pass |
-| FR-010 Unique order number | TC-ORD-04, 05, 09, 10 | 4 of 4 pass |
-| FR-011 Order status values | TC-TRK-01, 04, 11 | 3 of 3 pass |
-| FR-012 Order history and status | TC-TRK-01, 02, 03, 07, 08, TC-ORD-13 | 6 of 6 pass |
-| FR-016 Payment result recorded | TC-ORD-04, 06, 07, 10, 13 | 5 of 5 pass |
-| NFR-004 No duplicate order on retry | TC-ORD-07, 12 | 2 of 2 pass |
-| NFR-005 Maintainability | TC-MNT-01 | pass |
-| NFR-006 Testability | TC-TST-01 | pass |
-| SEC-002 RBAC | TC-TRK-03, 11, TC-ORD-11 | 3 of 3 pass |
-| SEC-003 Input validation | TC-ORD-03, 12, 14 | 3 of 3 pass |
-| SEC-004 Reject invalid token | TC-CART-03, TC-TRK-08 | 2 of 2 pass |
-| Business rule 6.5 (cancel only while PLACED) | TC-TRK-05, 06, 09, 10 | 4 of 4 pass |
-
-Totals: 36 test cases in this document (CART 9, ORD 14, TRK 11, TST 1, MNT 1). All 36 pass. Eight are new in this version
-(TC-CART-09, TC-ORD-11 to 14, TC-TRK-09 to 11); thirteen have updated steps or expected results.
-
-## 5. Defects found while running the cases
-
-| ID | Found by | Defect | Severity | Fix | Status |
-|---|---|---|---|---|---|
-| DEF-01 | TC-TRK-06, TC-TRK-11 (live run) | `PATCH /api/v1/admin/orders/{id}/status` and `GET /api/v1/admin/orders` returned 404. The admin order router was mounted at `/orders`, so it was hidden behind the customer router, while the documentation, the client and the SAD use `/admin/orders`. The unit tests did not see it because they mount the router themselves. | High (staff could not update orders) | `backend/routes/cartCheckoutModule.js` mounts the router under `/admin`; regression test in `backend/tests/orderModelAndRepo.test.js` | Fixed, verified |
-| DEF-02 | TC-ORD-07 (live run) | A payment timeout answered `500 INTERNAL_ERROR "Something went wrong"` instead of `504 PAYMENT_TIMEOUT`, because the shared error handler hides the code of every 5xx error. The checkout screen then could not show its "payment service did not answer, try again" message. | High (NFR-004 flow broken in the real app) | `server/errorHandler.js` keeps the code and message for `PAYMENT_TIMEOUT` only; every other 5xx stays generic; regression test in `server/security.test.js` | Fixed, verified |
-
-Observations for the owners of other modules (not defects of this module, reported for the team):
-
-1. `POST /api/books` and `PATCH /api/books/:id/disable` (and the other book write endpoints) need no login. The SAD (API-15 and later) places book management under `/admin/books` with an administrator token. This is a security gap (SEC-002).
-2. The cart UI is in `client/src/components/shop`; the shared `AuthDialog` and `authApi.js` have no tests (0% in the client coverage report).
-3. `docs/CART_CHECKOUT.md` was out of date (test counts, deviations 9 and 11) and has been updated.
+| Catalog: browse, search, details, pagination | TC-CAT-01 to 15 |
+| FR-006 to FR-012, FR-016 (cart, checkout, orders, staff order status) | TC-CART, TC-ORD, TC-TRK, TC-BK-42 to 44 |
+| FR-001, FR-002 (register, login) | TC-AUTH-01 to 08 |
+| SEC-001 to SEC-006 | TC-AUTH, TC-SEC, TC-CART-03, TC-TRK-08, TC-ORD-11; SEC-002 has the open DEF-04 |
+| Admin books and stock management | TC-BK-20 to 22 (on a local checkout with the fix; see DEF-04) |
+| NFR performance (catalog under 50 users) | TC-PERF-01 to 03 |
+| NFR-004 to NFR-006 (retry safety, no duplicate orders, stock) | TC-ORD-07, 08, 09, 12, TC-TRK-09, 10 |
+| Usability (order in five screens or fewer) | Walkthrough document only; TC-USA-01 not run |

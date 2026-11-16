@@ -1,0 +1,22 @@
+[
+  {
+    "id": "TC-ORD-06",
+    "title": "Declined payment creates no confirmed order",
+    "expected": "402 PAYMENT_DECLINED; order CANCELLED with paymentStatus FAILED; stock restored; cart kept",
+    "phase": "decline",
+    "result": "Pass",
+    "actual": "✔ returned 402 PAYMENT_DECLINED; ✔ stock restored (5); ✔ cart kept (1 line, quantity 2); ✔ database holds 1 FAILED order(s), status CANCELLED; ✔ database holds 0 confirmed orders",
+    "durationMs": 51,
+    "ranAt": "2026-11-16T17:15:37.920Z"
+  },
+  {
+    "id": "TC-ORD-13",
+    "title": "A declined payment is not shown in order history or detail (new in Part 3)",
+    "expected": "History empty; no confirmed order visible",
+    "phase": "decline",
+    "result": "Pass",
+    "actual": "✔ history has 0 orders; ✔ a decline happened in TC-ORD-06",
+    "durationMs": 11,
+    "ranAt": "2026-11-16T17:15:37.920Z"
+  }
+]

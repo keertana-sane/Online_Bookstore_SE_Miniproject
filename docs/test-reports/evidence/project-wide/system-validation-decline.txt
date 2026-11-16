@@ -1,0 +1,4 @@
+PASS  TC-ORD-06  Declined payment creates no confirmed order
+PASS  TC-ORD-13  A declined payment is not shown in order history or detail (new in Part 3)
+
+decline: 2/2 passed

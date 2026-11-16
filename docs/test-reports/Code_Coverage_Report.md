@@ -1,94 +1,70 @@
-# Code Coverage Report
+# Code Coverage Report (consolidated, project-wide)
 
-Team 15 · Online Bookstore (BookNest) · Measured 5 November 2026
+Team 15 · Online Bookstore (BookNest) · UE24CS341A Software Engineering
+Measured on 16 November 2026 on a fresh clone of `main` at `a779478`. Compiled by B S Keertana.
 
-Tools: Jest with Istanbul (`jest --coverage`) for `backend/`, Vitest with V8 (`vitest --coverage`) for `client/`.
-Raw tables: `evidence/coverage-backend.txt`, `evidence/coverage-client.txt`; summaries as JSON:
-`evidence/coverage-backend-summary.json`, `evidence/coverage-client-summary.json`.
-
-Reproduce (backend): `cd backend && npx jest --coverage --collectCoverageFrom='services/**/*.js' --collectCoverageFrom='routes/**/*.js' --collectCoverageFrom='repositories/**/*.js' --collectCoverageFrom='models/**/*.js' --collectCoverageFrom='utils/**/*.js' --collectCoverageFrom='middleware/**/*.js' --collectCoverageFrom='mock-payment/**/*.js'`
-Reproduce (client): `cd client && npm i --no-save @vitest/coverage-v8 && npx vitest run --coverage --coverage.include='src/**/*.{js,jsx}' --coverage.exclude='src/**/*.test.*'`
+Tools: Jest with Istanbul (`jest --coverage`) for `backend/`; Vitest with V8 (`vitest --coverage`) for `client/`; Node's built-in
+test coverage (`node --test --experimental-test-coverage`) for `server/`.
+Raw output: `evidence/project-wide/backend-unit-and-coverage.txt`, `client-unit-and-coverage.txt`, `server-coverage.txt`;
+summaries as JSON: `backend-coverage-summary.json`, `client-coverage-summary.json` (same folder).
 
 ## 1. Target (TC-MNT-01)
 
-Test Plan target: at least **70% line coverage on the service layer**.
-Result: services **95.59% lines**. **Target met.**
+The Test Plan target is at least **70% line coverage on the service layer**.
+Result: the backend service layer (`backend/services`, 5 files) has **95.59% line coverage (217 of 227 lines)**. **Target met.**
 
-## 2. Backend: line coverage
+## 2. Backend (174 tests)
 
-| Scope | Statements | Lines | Functions |
+Measured code: `services`, `routes`, `repositories`, `models`, `utils`, `middleware`, `mock-payment` (29 files).
+
+| Scope | Lines | Statements | Functions |
 |---|---|---|---|
-| **Service layer** (`services/`, 5 files) | 95.16% (236/248) | **95.59% (217/227)** | 98.28% (57/58) |
-| Cart, checkout and order module (services, routes, models, money, mock payment) | 97.15% (341/351) | **97.52% (314/322)** | 100% (85/85) |
-| Whole measured backend (`services`, `routes`, `repositories`, `models`, `utils`, `middleware`, `mock-payment`) | 88.80% (563/634) | **90.30% (531/588)** | 88.27% (128/145) |
+| **Service layer** (5 files) | **95.59% (217/227)** | 95.16% | 98.28% |
+| Whole measured backend | **90.31% (531/588)** | 88.80% (563/634) | 88.28% (128/145) |
 
-| Directory | Statements | Branches | Functions | Lines |
-|---|---|---|---|---|
-| `services/` | 95.16 | 87.58 | 98.27 | 95.59 |
-| `routes/` | 100 | 71.42 | 100 | 100 |
-| `models/` | 100 | 100 | 100 | 100 |
-| `mock-payment/` | 95.83 | 92 | 100 | 95.65 |
-| `utils/` | 94.59 | 91.42 | 100 | 97.22 |
-| `middleware/` | 87.5 | 82.14 | 90 | 91.3 |
-| `repositories/` | 52.52 | 28.3 | 50 | 55.17 |
+By module (owner):
 
-Per file (cart, checkout and orders):
-
-| File | Statements | Branches | Functions | Lines | Uncovered lines |
-|---|---|---|---|---|---|
-| `services/cartService.js` | 100 | 94.44 | 100 | 100 | none |
-| `services/orderService.js` | 94.53 | 85.48 | 100 | 95.76 | 96, 205, 225, 315-316 |
-| `services/orderStatusMachine.js` | 100 | 75 | 100 | 100 | none |
-| `services/paymentAdapter.js` | 95.23 | 100 | 100 | 94.44 | 49 (payment status lookup that fails and returns null) |
-| `routes/cartRoutes.js` | 100 | 44.44 | 100 | 100 | none |
-| `routes/orderRoutes.js` | 100 | 75 | 100 | 100 | none |
-| `routes/adminOrderRoutes.js` | 100 | 100 | 100 | 100 | none |
-| `routes/cartCheckoutModule.js` | 100 | 80 | 100 | 100 | none |
-| `models/Cart.js`, `models/Order.js` | 100 | 100 | 100 | 100 | none |
-| `repositories/orderRepository.js` | 63.46 | 30.76 | 63.63 | 63.04 | 7-11, 39-53, 74-75, 96, 117-120 |
-| `repositories/cartRepository.js` | 20 | 0 | 16.66 | 22.22 | 2-26 |
-| `repositories/bookRepository.js` | 22.22 | 0 | 16.66 | 26.66 | 14-53 |
-
-**Why the repositories are low.** The repositories are the only layer that talks to MongoDB. The unit tests replace them
-with in-memory stand-ins (by design, TC-TST-01), so the Jest run does not enter them. They are exercised by the live
-system tests against a real MongoDB 8 (every cart, checkout, cancel and staff call of the 32 API cases, including the 10-round
-concurrency tests), but that run is not instrumented, so it is not counted in this table. The Jest figure for `repositories/` is
-therefore a lower bound and the service-layer figure is the one TC-MNT-01 asks for.
-
-## 3. Client
-
-| Scope | Statements | Lines | Functions |
+| Module | Files | Lines | Notes |
 |---|---|---|---|
-| **Shop screens and API client** (`components/shop/`, `api/shopApi.js`) | 89.15% (230/258) | **92.34% (205/222)** | 94.12% (64/68) |
-| `components/admin/AdminOrdersPage.jsx` | 97.5 | 100 | 91.66 |
-| Whole `src/` (includes `App.jsx`, `AuthDialog.jsx`, `authApi.js`, `main.jsx`) | 51.64% (298/577) | 50.76% (267/526) | 54.96% (83/151) |
+| Cart, checkout, orders (B S Keertana): services, routes, models, validators, money, mock payment (no repositories) | 14 | **97.61% (327/335)** | |
+| Admin orders (Bhuvan Raj H): `adminOrderRoutes.js`, `orderStatusMachine.js` | 2 | **100% (20/20)** | |
+| Authentication and security (Bhagath Naveen Mullakara): auth service and routes, middleware, user model and repository, security events | 10 | **91.41% (149/163)** | Bhagath's focused run alone: 93.28% (125/134) over 7 files |
+| Data repositories (book, cart, order) | 3 | 50.00% (35/70) | The unit tests replace repositories with in-memory stand-ins, so these run for real only in the live system runs |
+| Catalog (Anushka Kumar) | 0 | not measured | Catalog logic is in `server/index.js`, outside the backend measurement |
 
-Per file:
+Files below 90% lines: `bookRepository.js` 26.67% (4/15), `cartRepository.js` 22.22% (2/9), `orderRepository.js` 63.04% (29/46),
+`userRepository.js` 76.47% (13/17), `authenticate.js` 87.5% (21/24), `requireRole.js` 86.67% (13/15), `sanitizeInput.js` 85.71% (6/7),
+`authService.js` 87.5% (28/32), `money.js` 83.33% (5/6). The first four are the repository files explained above.
 
-| File | Statements | Branches | Functions | Lines |
-|---|---|---|---|---|
-| `shop/CartPage.jsx` | 95.12 | 92.98 | 92.3 | 96.96 |
-| `shop/CheckoutPage.jsx` | 96.66 | 86.56 | 100 | 100 |
-| `shop/OrderConfirmation.jsx` | 75 | 62.5 | 100 | 100 |
-| `shop/OrdersPage.jsx` | 98.27 | 85.71 | 100 | 98.18 |
-| `shop/errors.js` | 65.9 | 57.62 | 83.33 | 75 |
-| `shop/format.js` | 83.33 | 66.66 | 100 | 100 |
-| `api/shopApi.js` | 86.66 | 84.37 | 87.5 | 85.71 |
-| `api/authApi.js` | 15.38 | 33.33 | 0 | 15.38 |
-| `App.jsx`, `AuthDialog.jsx`, `main.jsx` | 0 | 0 | 0 | 0 |
+## 3. Client (59 tests)
 
-The whole-client figure is low because the application shell, the login dialog and the auth API client (not part of the
-cart and order screens) have no unit tests. `App.jsx` is covered at a higher level by the browser run of TC-ORD-10 and
-TC-TRK-01 (System Validation Report, section 4).
+Measured: all of `client/src`.
 
-## 4. Server (`server/`)
+| Scope | Lines | Statements |
+|---|---|---|
+| Whole `src/` | **50.76% (267/526)** | 51.64% (298/577) |
+| Shop screens, API client and cart hook (cart, checkout, orders; B S Keertana) | **93.12% (230/247)** | 90.18% (257/285) |
+| Admin orders screen (Bhuvan Raj H) | **100% (35/35)** | |
+| Auth API client and login dialog (Bhagath Naveen Mullakara) | **4.65% (2/43)** | |
+| `App.jsx` and `main.jsx` (catalog screens, admin catalog screen, app shell) | **0% (0/201)** | |
 
-`server/` has 7 tests (`node --test`) and no coverage tool is configured there, so no percentage is reported. Its files
-(`index.js`, `errorHandler.js`, `requestLogger.js`) are mostly wiring; `errorHandler.js` is covered by the tests in
-`security.test.js` for the 500 and 504 paths.
+The low whole-`src` figure comes from one large file: `App.jsx` (200 lines) holds the catalog, admin catalog and auth wiring and has
+no unit test. The shop and admin order screens, which have unit tests, are covered above 93%.
 
-## 5. Conclusion
+## 4. Server package (8 tests)
 
-* TC-MNT-01 target (at least 70% line coverage on services): **met, 95.59%**.
-* Cart, checkout and order module: 97.52% of lines, 100% of functions.
-* Gaps are in repositories (needs a real database, covered by system tests), the client app shell and the auth client.
+`node --test --experimental-test-coverage`: 98.35% lines overall. This figure is inflated because Node counts the test files
+themselves (`basic.test.js`, `security.test.js` at 100%) and `server/index.js` is never loaded by a test, so its routes are not in the
+number. `errorHandler.js` 91.67% lines, `requestLogger.js` 100%, `sanitizeInput.js` 100%, `securityEvents.js` 100%.
+
+## 5. What this does not show
+
+- The catalog and book admin routes (`server/index.js`) have no unit coverage; they were checked by live requests only.
+- Coverage by unit tests is not coverage by system tests. The live runs add to it (System Validation Report).
+- Line coverage says a line ran, not that its result was checked.
+
+## 6. Reproduce
+
+Backend: `cd backend && npx jest --runInBand --coverage --collectCoverageFrom='services/**/*.js' --collectCoverageFrom='routes/**/*.js' --collectCoverageFrom='repositories/**/*.js' --collectCoverageFrom='models/**/*.js' --collectCoverageFrom='utils/**/*.js' --collectCoverageFrom='middleware/**/*.js' --collectCoverageFrom='mock-payment/**/*.js'`
+Client: `cd client && npm i --no-save @vitest/coverage-v8 && npx vitest run --coverage --coverage.include='src/**/*.{js,jsx}' --coverage.exclude='src/**/*.test.*'`
+Server: `cd server && node --test --experimental-test-coverage`

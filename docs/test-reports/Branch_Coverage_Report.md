@@ -1,24 +1,31 @@
-# Branch Coverage Report
+# Branch Coverage Report (consolidated, project-wide)
 
-Team 15 · Online Bookstore (BookNest) · Measured 5 November 2026
+Team 15 · Online Bookstore (BookNest) · UE24CS341A Software Engineering
+Measured on 16 November 2026 on a fresh clone of `main` at `a779478`, in the same runs as the
+[Code Coverage Report](Code_Coverage_Report.md). Compiled by B S Keertana.
 
-Same runs as the [Code Coverage Report](Code_Coverage_Report.md). A branch is one outcome of an `if`, a `?:`, a `&&` or
-`||`, a default argument or a `switch` case. Raw data: `evidence/coverage-backend.txt`, `evidence/coverage-client.txt`
-and the two JSON summaries.
+A branch is one outcome of an `if`, a `?:`, a `&&` or `||`, a default argument or a `switch` case. Raw data:
+`evidence/project-wide/backend-unit-and-coverage.txt`, `client-unit-and-coverage.txt`, `server-coverage.txt` and the two JSON summaries.
+
+The Test Plan sets a target only for line coverage (70%). It sets none for branches; for this report 80% was used as the goal for
+code that has unit tests.
 
 ## 1. Summary
 
-| Scope | Branches covered | Branch coverage |
-|---|---|---|
-| Backend service layer | 127 / 145 | **87.6%** |
-| Backend cart, checkout and order module (services, routes, models, money, mock payment) | 142 / 164 | **86.6%** |
-| Backend cart and order services and routes only | 112 / 131 | **85.5%** |
-| Backend whole measured code | 275 / 356 | 77.24% |
-| Client shop screens and API client | 221 / 275 | **80.4%** |
-| Client whole `src/` | 255 / 598 | 42.64% |
-
-The Test Plan sets a target only for line coverage (70%). No branch target is set; for this report we used 80% as the
-goal for our own module and it is met in both backend (86.6%) and client (80.4%).
+| Scope | Branches covered | Branch coverage | 80% goal |
+|---|---|---|---|
+| Backend service layer (5 files) | 127 / 145 | **87.59%** | Met |
+| Backend whole measured code (29 files) | 277 / 358 | 77.37% | Not met (see repositories below) |
+| Backend cart, checkout, orders, no repositories (B S Keertana) | 166 / 189 | **87.83%** | Met |
+| Backend admin orders (Bhuvan Raj H) | 5 / 6 | 83.33% | Met |
+| Backend authentication and security (Bhagath Naveen Mullakara) | 98 / 121 | 80.99% | Met |
+| Backend repositories (book, cart, order) | 8 / 42 | 19.05% | Not met: stand-ins replace them in unit tests |
+| Client shop screens, API client, cart hook (B S Keertana) | 221 / 275 | **80.36%** | Met |
+| Client admin orders screen (Bhuvan Raj H) | 32 / 41 | 78.05% | Just below |
+| Client auth API client and dialog (Bhagath Naveen Mullakara) | 2 / 39 | 5.13% | Not met: no unit tests |
+| Client `App.jsx`, `main.jsx` | 0 / 243 | 0% | Not met: no unit tests |
+| Client whole `src/` | 255 / 598 | 42.64% | Not met |
+| Server package (`node --test`) | | 87.72% | Met (includes test files; `index.js` not loaded) |
 
 ## 2. Backend branch coverage by file
 
@@ -26,54 +33,57 @@ goal for our own module and it is met in both backend (86.6%) and client (80.4%)
 |---|---|---|
 | `services/cartService.js` | 34/36 | 94.44 |
 | `services/orderService.js` | 53/62 | 85.48 |
-| `services/orderStatusMachine.js` | 3/4 | 75 |
+| `services/orderStatusMachine.js` | 3/4 | 75.00 |
 | `services/paymentAdapter.js` | 9/9 | 100 |
 | `services/authService.js` | 28/34 | 82.35 |
-| `routes/adminOrderRoutes.js` | 2/2 | 100 |
-| `routes/orderRoutes.js` | 3/4 | 75 |
-| `routes/cartCheckoutModule.js` | 4/5 | 80 |
 | `routes/cartRoutes.js` | 4/9 | 44.44 |
-| `models/*` | all | 100 |
-| `mock-payment/mockPaymentService.js` | 23/25 | 92 |
-| `repositories/*` | 15/53 | 28.3 (see Code Coverage Report, section 2) |
+| `routes/orderRoutes.js` | 3/4 | 75.00 |
+| `routes/cartCheckoutModule.js` | 4/5 | 80.00 |
+| `routes/adminOrderRoutes.js` | 2/2 | 100 |
+| `routes/authRoutes.js` | 8/9 | 88.89 |
+| `routes/authModule.js` | 4/6 | 66.67 |
+| `middleware/authenticate.js` | 19/25 | 76.00 |
+| `middleware/requireRole.js` | 10/12 | 83.33 |
+| `middleware/loginRateLimit.js` | 13/15 | 86.67 |
+| `middleware/sanitizeInput.js` | 4/4 | 100 |
+| `mock-payment/mockPaymentService.js` | 23/25 | 92.00 |
+| `utils/validators.js` | 24/26 | 92.31 |
+| `utils/money.js` | 3/4 | 75.00 |
+| `repositories/orderRepository.js` | 8/26 | 30.77 |
+| `repositories/userRepository.js` | 7/11 | 63.64 |
+| `repositories/bookRepository.js` | 0/12 | 0 |
+| `repositories/cartRepository.js` | 0/4 | 0 |
 
-## 3. The branches that are not covered, and why
+(Models, `AppError`, `inputLimits` and `securityEvents` have no branches or are fully covered.)
 
-| Location | Branch | Reason it is not hit by the unit tests | Covered elsewhere? |
-|---|---|---|---|
-| `orderService.js` 205, 219 | Duplicate-key error while saving an order: a second request with the same `Idempotency-Key` arriving at the same moment as the first | Needs two real concurrent inserts against the unique index; the in-memory stand-in cannot raise a duplicate-key error mid-flight | Sequential same-key replay is tested (TC-ORD-07, 200 with the same order). The unique index is checked in `orderModelAndRepo.test.js` |
-| `orderService.js` 314-316 | Staff status update loses a race (the order changed between the read and the conditional update) | Needs two writers at once | The conditional update itself is asserted in `orderModelAndRepo.test.js`; TC-TRK-10 exercises the matching customer-cancel race on real MongoDB (10 of 10 rounds) |
-| `orderService.js` 158 | Release of stock when none was held | Defensive guard; no code path reaches it with current callers | No |
-| `orderService.js` 56, 112 | Actor label `staff` in the history shown to the customer; default argument `= {}` | The tests that read history use customer and system actors only; the default is never used | No |
-| `cartService.js` 28, 33 | Book deleted from the catalog while still in a cart (`book` is null) | Not reproducible through the public API: books are disabled, never deleted | No |
-| `orderStatusMachine.js` 10 | Unknown `fromStatus` (`|| []`) | Defensive default | No |
-| `cartRoutes.js` 16, 17, 37, 48 and `orderRoutes.js` 23 | `req.user || {}` and `req.body || {}` fallbacks | `authenticate` and `express.json()` always set these; the fallbacks only protect against wiring mistakes | No |
-| `cartCheckoutModule.js` 41 | Default value for the mongoose instance | The server always passes its own instance | No |
-| `paymentAdapter.js` 49 | Payment status lookup fails and returns null (a line, not a branch) | Needs the stub to throw on lookup | TC-ORD-07 ran the real 5 s timeout (5.0 s measured) |
+## 3. Branches not covered, and why
 
-No uncovered branch hides a business rule. Everything that decides a customer-visible outcome (stock check, payment
-SUCCESS, DECLINED and TIMEOUT, idempotent replay, cancel allowed or refused, ownership, role check, validation limits)
-has both of its branches covered.
+Reasons come from reading the lines that the coverage tool lists.
 
-## 3b. Client branches
+| Where | What the uncovered branch is |
+|---|---|
+| `cartRoutes.js` lines 16 to 48 | The fall-back choices for the user id (`user.id`, `user._id`, `user.sub`) and the `req.body \|\| {}` defaults |
+| `orderService.js` lines 96, 205, 225, 315-316 | Rare error paths: failure to allocate an order number, re-throwing an error that is not a duplicate key, and a failed lookup after an update |
+| `orderStatusMachine.js` line 10 | The `\|\| []` fall-back for a status that is not in the table |
+| `authenticate.js` lines 35-36, 49; `requireRole.js` lines 16-17 | Security-log and 401 paths for unusual token cases, and forwarding an unexpected error |
+| Repository files | Replaced by in-memory stand-ins in unit tests; these paths run in the live system runs |
 
-| File | Branches covered | Branch % |
+## 4. Client branch coverage by file
+
+| File | Branches | Branch % |
 |---|---|---|
 | `shop/CartPage.jsx` | 53/57 | 92.98 |
-| `shop/CheckoutPage.jsx` | 58/67 | 86.56 |
+| `shop/CheckoutPage.jsx` | 58/67 | 86.57 |
 | `shop/OrdersPage.jsx` | 42/49 | 85.71 |
-| `shop/OrderConfirmation.jsx` | 5/8 | 62.5 |
-| `shop/format.js` | 2/3 | 66.66 |
-| `shop/errors.js` | 34/59 | 57.62 |
-| `api/shopApi.js` | 27/32 | 84.37 |
+| `api/shopApi.js` | 27/32 | 84.38 |
+| `shop/errors.js` | 34/59 | 57.63 |
+| `shop/OrderConfirmation.jsx` | 5/8 | 62.50 |
+| `admin/AdminOrdersPage.jsx` | 32/41 | 78.05 |
+| `api/authApi.js` | 2/6 | 33.33 |
+| `AuthDialog.jsx`, `App.jsx` | 0/276 | 0 |
 
-The weakest file is `errors.js`, which turns server error codes into customer messages. The tests cover the messages the
-screens show most (out of stock, declined, timeout, network, login required); the remaining codes fall through to the
-generic "Something went wrong" message and are not asserted.
+## 5. Conclusion
 
-## 4. Conclusion and follow-up
-
-Branch coverage of the cart, checkout and order module is 86.6% (backend) and 80.4% (client screens). The remaining
-branches are race conditions (checked on a real database by TC-ORD-09 and TC-TRK-10) and defensive fallbacks. If time
-allows in Sprint 3, the two cheapest gains are a unit test for the null-book cart line and for the `errors.js` message
-mapping.
+Every module with unit tests meets the 80% branch goal, or is within two points of it (admin orders screen). The backend total of
+77.37% is held down by repository files that the unit tests deliberately stub. The client total of 42.64% is held down by `App.jsx`
+and `AuthDialog.jsx`, which have no unit tests. These are the two gaps for any follow-up work.

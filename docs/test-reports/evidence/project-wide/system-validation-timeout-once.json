@@ -1,0 +1,12 @@
+[
+  {
+    "id": "TC-ORD-07",
+    "title": "Retry after payment timeout does not duplicate order",
+    "expected": "First call 504 PAYMENT_TIMEOUT with no order; retry gives exactly one order; third call returns the same order (200)",
+    "phase": "timeout-once",
+    "result": "Pass",
+    "actual": "✔ first call returned 504 PAYMENT_TIMEOUT after 5014 ms; ✔ no order after the timeout; ✔ stock released (5); ✔ retry returned 201; ✔ third call returned 200, same order true; ✔ exactly 1 order in history; ✔ stock reduced once (4); ✔ database holds 1 order(s) for this customer",
+    "durationMs": 5074,
+    "ranAt": "2026-11-16T17:15:53.510Z"
+  }
+]
