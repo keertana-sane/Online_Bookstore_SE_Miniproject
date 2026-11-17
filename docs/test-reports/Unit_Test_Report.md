@@ -1,7 +1,7 @@
 # Unit Test Report (consolidated, project-wide)
 
 Team 15 · Online Bookstore (BookNest) · UE24CS341A Software Engineering
-Run on 16 November 2026 on a fresh clone of `main` at `a779478` (after PR #64). Node 22, Linux.
+Run on 16 November 2026 on a fresh clone of `main` at `a779478` (after PR #64). Node 22, Linux. Re-run on 17 November 2026 after the DEF-04 change: backend 174, client 59 and server 8 all passed again (no unit test was added or changed).
 Compiled by B S Keertana from the run below and from the members' own unit-test runs (section 4).
 
 ## 1. Result

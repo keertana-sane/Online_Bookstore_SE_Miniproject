@@ -26,6 +26,12 @@ const EMPTY_FORM = {
   stock: "",
 };
 
+// Book create, edit, restock and disable need the staff login token (SEC-002).
+function adminHeaders(extra = {}) {
+  const token = window.sessionStorage.getItem(TOKEN_KEY);
+  return token ? { ...extra, Authorization: `Bearer ${token}` } : { ...extra };
+}
+
 function App() {
   const [authUser, setAuthUser] = useState(() => {
     const token = window.sessionStorage.getItem(TOKEN_KEY);
@@ -200,7 +206,7 @@ function App() {
     try {
       const response = await fetch(url, {
         method: isEditing ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: adminHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(payload),
       });
 
@@ -269,7 +275,7 @@ function App() {
     try {
       const response = await fetch(`${API_URL}/books/${book._id}/stock`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: adminHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ stock: Number(value) }),
       });
 
@@ -296,7 +302,7 @@ function App() {
     try {
       const response = await fetch(
         `${API_URL}/books/${book._id}/disable`,
-        { method: "PATCH" }
+        { method: "PATCH", headers: adminHeaders() }
       );
 
       const result = await response.json();

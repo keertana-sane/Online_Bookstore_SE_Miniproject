@@ -67,10 +67,14 @@ async function login(email) {
   return { token: r.body.token, id: claims.sub, role: claims.role };
 }
 
+// Book create and disable need the staff login (SEC-002); set once the administrator logs in.
+let adminToken = null;
+
 let counter = 0;
 async function makeBook({ price = 100, stock = 5, title } = {}) {
   counter += 1;
   const r = await api('POST', '/api/books', {
+    token: adminToken,
     body: {
       title: title || `SYSTEST ${Date.now()}-${counter}`,
       author: 'System Tester',
@@ -133,6 +137,7 @@ async function main() {
   const c2 = await fresh('two');
   const c3 = await fresh('three');
   const admin = await login('admin@example.com');
+  adminToken = admin.token;
 
   let mongoose = null;
   if (process.env.MONGODB_URI) {
@@ -227,7 +232,7 @@ async function main() {
         const gone = await makeBook({ price: 50, stock: 5 });
         await addToCart(c1, keep, 1);
         await addToCart(c1, gone, 1);
-        const dis = await api('PATCH', `/api/books/${gone}/disable`);
+        const dis = await api('PATCH', `/api/books/${gone}/disable`, { token: admin.token });
         t.check(dis.status === 200, `book disabled (${dis.status})`);
         const cart = (await getCart(c1)).body;
         const line = cart.items.find((i) => i.bookId === gone);
@@ -331,6 +336,28 @@ async function main() {
       }
       t.check(okRounds === 10, `${okRounds}/10 rounds gave one 201 and one 409 with stock 0 (${seen.join(' | ')})`);
     });
+
+    await test('TC-SEC-08', 'Book create, edit, restock and disable need a staff login (DEF-04 regression)',
+      'No token 401, customer token 403, staff token succeeds; reads stay public', async (t) => {
+        const body = { title: `SYSTEST noauth ${runId}`, author: 'System Tester', category: 'SystemTest', price: 10, stock: 1 };
+        const id = await makeBook({ price: 10, stock: 3 });
+        const calls = [
+          ['POST', '/api/books', body],
+          ['PUT', `/api/books/${id}`, { ...body, title: `SYSTEST edit ${runId}` }],
+          ['PATCH', `/api/books/${id}/stock`, { stock: 99 }],
+          ['PATCH', `/api/books/${id}/disable`, undefined]
+        ];
+        for (const [method, url, payload] of calls) {
+          const anon = await api(method, url, { body: payload });
+          t.check(anon.status === 401, `${method} ${url.replace(id, ':id')} with no token returned ${anon.status}`);
+          const cust = await api(method, url, { token: c1.token, body: payload });
+          t.check(cust.status === 403, `${method} ${url.replace(id, ':id')} as CUSTOMER returned ${cust.status}`);
+        }
+        t.check((await stockOf(id)) === 3, `stock unchanged at 3 after the refused calls`);
+        const ok = await api('PATCH', `/api/books/${id}/stock`, { token: admin.token, body: { stock: 7 } });
+        t.check(ok.status === 200, `PATCH stock as ADMIN_STAFF returned ${ok.status}`);
+        t.check((await api('GET', '/api/books')).status === 200, 'GET /api/books without a token still returns 200');
+      });
 
     await test('TC-ORD-11', 'Staff accounts cannot use the cart or orders (new in Part 3)', '403 FORBIDDEN on cart and orders', async (t) => {
       const checks = [

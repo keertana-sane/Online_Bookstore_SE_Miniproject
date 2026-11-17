@@ -1,7 +1,7 @@
 # System Validation Report (consolidated, project-wide)
 
 Team 15 · Online Bookstore (BookNest) · UE24CS341A Software Engineering
-Cart, checkout and orders re-run on 16 November 2026 on `main` at `a779478`. Other modules: the members' own runs.
+Cart, checkout and orders re-run on 17 November 2026 on `main` at `adec1d9` plus the DEF-04 fix. Other modules: the members' own runs.
 
 System validation means the running application is exercised the way a user or client would: real HTTP to the real Express
 server with a real database, or a real browser. It is separate from the unit tests.
@@ -10,8 +10,8 @@ server with a real database, or a real browser. It is separate from the unit tes
 
 | Module (owner) | What was run | Cases | Pass | Not pass | Where run |
 |---|---|---|---|---|---|
-| Cart, checkout, orders (B S Keertana) | Live API, three payment modes | 32 | 32 | 0 | Real MongoDB 8, 16 Nov 2026 (this run) |
-| Cart, checkout, orders (B S Keertana) | Real browser (Playwright) | 5 | 5 | 0 | 5 Nov 2026, not repeated |
+| Cart, checkout, orders (B S Keertana) | Live API, three payment modes | 33 | 33 | 0 | Real MongoDB 8, 17 Nov 2026 (this run) |
+| Cart, checkout, orders (B S Keertana) | Real browser (Playwright) | 5 | 5 | 0 | 5 Nov 2026, repeated 17 Nov 2026 after the DEF-04 change: 5 of 5 pass |
 | Catalog (Anushka Kumar) | Postman and browser, 15 functional cases; JMeter, 3 load cases | 18 | 18 | 0 | Local, her own run |
 | Admin, set-up, CI (Bhuvan Raj H) | Live API and browser on a local MongoDB; static Docker check; regression | 32 | 30 | 2 not run | Local, his own run (Windows) |
 | Authentication and security (Bhagath Naveen Mullakara) | Integration tests (Supertest, in-memory) and screenshots of the dialogs | 18 | 13 | 4 partial, 1 not run | Local; no live-database auth run |
@@ -28,23 +28,25 @@ Script: `backend/tests/system/systemValidation.js`. Each run registers its own c
 
 | Phase | Payment mode | Cases | Passed | Failed | Time |
 |---|---|---|---|---|---|
-| `success` | success | 29 | 29 | 0 | 1.4 s |
+| `success` | success | 30 | 30 | 0 | 1.7 s |
 | `decline` | decline | 2 (TC-ORD-06, TC-ORD-13) | 2 | 0 | 0.06 s |
 | `timeout-once` | timeout-once | 1 (TC-ORD-07) | 1 | 0 | 5.1 s (the adapter waits its 5 s limit by design) |
-| **Total** | | **32** | **32** | **0** | 6.5 s |
+| **Total** | | **33** | **33** | **0** | 6.9 s |
 
 Raw results with every check and the actual value seen: `evidence/project-wide/system-validation-success.json`, `-decline.json`,
 `-timeout-once.json` (and the console output in the matching `.txt` files).
 
-First attempt note: an earlier attempt that day showed two failures in the `decline` phase and a login failure (429) in
+First attempt note: an earlier attempt on 16 Nov showed two failures in the `decline` phase and a login failure (429) in
 `timeout-once`. Both came from the test harness, not the product. The most likely cause is that the previous phase's server was still answering on the
 port (the `decline` calls got a 201, which only `success` mode gives), and the login limiter (10 attempts per 15 minutes) then blocked the
 next phase. The whole sequence was re-run from an empty database with each server stopped before the next started; those results are
 the ones above.
 
-The browser run (5 checks: TC-ORD-10, TC-TRK-01, TC-TRK-07 and the cart and checkout screens) was done on 5 November with
-screenshots `evidence/screenshots/01` to `08`; the report and results are in
-[cart-checkout/System_Validation_Report.md](cart-checkout/System_Validation_Report.md). The cart, checkout and order screens have had no commits since 29 October, so it was not repeated.
+The browser run (5 checks: TC-ORD-10, TC-TRK-01, TC-TRK-05, TC-TRK-07 and a check for JavaScript errors) was done on 5 November with
+screenshots `evidence/screenshots/01` to `08`, and repeated on 17 November 2026 after the DEF-04 change (the client now sends the staff
+token on book writes; the script logs in as the administrator to create its test book): 5 of 5 pass, results in
+`evidence/project-wide/ui-validation-results.json`. The 5 November report is in
+[cart-checkout/System_Validation_Report.md](cart-checkout/System_Validation_Report.md).
 
 ## 3. Catalog (Anushka Kumar)
 
@@ -77,8 +79,8 @@ Windows, Node 24, local MongoDB, separate test database and disposable accounts;
 
 Not run: TC-BK-45-02 (Docker is not installed on that machine) and TC-BK-47-02 (no development freeze record in the repository).
 
-Important: this record reports 401 for anonymous and 403 for customer calls to the book routes **after a local fix**. That fix is
-not on `main`; see DEF-04 in section 6.
+Note: this record reports 401 for anonymous and 403 for customer calls to the book routes after a local fix. That fix was not on
+`main`; the login requirement on `main` is now covered by TC-SEC-08 (section 2 and DEF-04 in section 6).
 
 ## 5. Authentication and security (Bhagath Naveen Mullakara)
 
@@ -92,14 +94,15 @@ Case Document, section 4). No live-database auth run and no browser register, lo
 |---|---|---|
 | DEF-01 | Staff order routes not mounted (found by TC-TRK-06, TC-TRK-11) | Fixed, passes in this run |
 | DEF-02 | Payment timeout returned `INTERNAL_ERROR` (found by TC-ORD-07) | Fixed, passes in this run |
-| DEF-04 | On `main`, the four book mutation routes need no login: `POST /api/books` without a token returned **201** on 16 Nov 2026 | **Open** on `main`. Bhuvan's checkout reports a fix |
+| DEF-04 | On `main`, the four book mutation routes needed no login: `POST /api/books` without a token returned **201** on 16 Nov 2026 | **Fixed** on 17 Nov 2026; TC-SEC-08 passes (no token 401, customer 403, staff 200, `GET /api/books` still public) |
 
 How DEF-04 was checked: the real server was started on the seeded database and `POST /api/books` was sent with no `Authorization`
-header and a valid book body. The book was created. Re-run TC-BK-20-02, TC-BK-21-03 and TC-BK-22-02 on `main` once the fix is merged.
+header and a valid book body. The book was created. After the fix, the same call returns 401, and TC-BK-20-02, TC-BK-21-03 and
+TC-BK-22-02 describe the same behaviour on the admin owner's checkout; they were not re-run by him on `main`.
 
 ## 7. Not covered
 
-- Browser run of the cart, checkout and order screens was not repeated on 16 Nov.
+- The admin catalog screen (add, edit, restock, disable a book through the browser) was not driven by a browser test; the server side of those routes is covered by TC-SEC-08.
 - Docker build and health check; development freeze record.
 - Live-database auth tests and browser logout flow.
 - UAT with real users and the five-user usability test (TC-USA-01); only the walkthrough in `docs/usability_walkthrough.md` exists.

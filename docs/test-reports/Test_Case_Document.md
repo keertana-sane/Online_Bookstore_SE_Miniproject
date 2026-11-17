@@ -1,7 +1,7 @@
 # Test Case Document (consolidated, project-wide)
 
 Team 15 · Online Bookstore (BookNest) · UE24CS341A Software Engineering · Part 3 (testing)
-Version 3.0 · consolidated 16 November 2026 · build tested: `main` at `a779478`
+Version 3.1 · consolidated 16 November 2026, updated 17 November 2026 for DEF-04 · build tested: `main` at `adec1d9` plus the DEF-04 fix
 
 This is the team's updated Test Case Document. It brings together the test cases that each member updated and ran for
 their own part of Sprint 1 and Sprint 2, with the result each member recorded. The full step-by-step cases are in each
@@ -11,20 +11,20 @@ member's own document (section 2); this document is the one place that lists eve
 
 | Module | Owner | Cases | Pass | Partial | Not run | Source document |
 |---|---|---|---|---|---|---|
-| Cart, checkout, order tracking | B S Keertana | 36 | 36 | 0 | 0 | [cart-checkout/Test_Case_Document.md](cart-checkout/Test_Case_Document.md) |
+| Cart, checkout, order tracking | B S Keertana (cart, checkout, tracking, and the DEF-04 regression case) | 37 | 37 | 0 | 0 | [cart-checkout/Test_Case_Document.md](cart-checkout/Test_Case_Document.md) |
 | Catalog, search, performance | Anushka Kumar | 18 | 18 | 0 | 0 | [Anushka_Individual_Test_Cases_Sprint_1_and_2.pdf](../Anushka_Individual_Test_Cases_Sprint_1_and_2.pdf) |
 | Authentication and security | Bhagath Naveen Mullakara | 18 | 13 | 4 | 1 | [Bhagath_Individual_Test_Cases.docx](../Bhagath_Individual_Test_Cases.docx) |
 | Admin, scaffold, CI, Docker | Bhuvan Raj H | 32 | 30 | 0 | 2 | [BhuvanRajH_Individual_Test_Cases_Sprint1_Sprint2_Formatted.docx](../BhuvanRajH_Individual_Test_Cases_Sprint1_Sprint2_Formatted.docx) |
-| **Total** | | **104** | **97** | **4** | **3** | |
+| **Total** | | **105** | **98** | **4** | **3** | |
 
-Pass rate of cases that were run: 97 of 101 (96.0%); 104 listed, 3 not run, 4 partly run. No case was marked Pass without
+Pass rate of cases that were run: 98 of 102 (96.1%); 105 listed, 3 not run, 4 partly run. No case was marked Pass without
 a recorded result. Cases not run or partly run are listed in section 4 with the reason.
 
 ## 2. Who updated which cases
 
 | Member | Sprint tasks | Cases |
 |---|---|---|
-| B S Keertana | BK-14 to BK-19 (Sprint 1), BK-36 to BK-41 (Sprint 2) | TC-CART-01 to 09, TC-ORD-01 to 14, TC-TRK-01 to 11, TC-TST-01, TC-MNT-01 (8 new, 13 updated; every case has an actual result) |
+| B S Keertana | BK-14 to BK-19 (Sprint 1), BK-36 to BK-41 (Sprint 2) | TC-CART-01 to 09, TC-ORD-01 to 14, TC-TRK-01 to 11, TC-TST-01, TC-MNT-01 (8 new, 13 updated; every case has an actual result), plus TC-SEC-08 added on 17 Nov |
 | Anushka Kumar | BK-03, BK-10 to BK-13 (Sprint 1); BK-29 to BK-34 (Sprint 2) | TC-CAT-01 to 15 (catalog), TC-PERF-01 to 03 (BK-29) |
 | Bhagath Naveen Mullakara | BK-04 to BK-09, BK-23 to BK-28, BK-46 | TC-AUTH-01 to 08, TC-SEC-01 to 07 (updated from Appendix A), plus TC-DEMO-01, TC-DOC-01, TC-CI-01 |
 | Bhuvan Raj H | BK-01, BK-02, BK-20 to BK-22 (Sprint 1); BK-42 to BK-45, BK-47, BK-48 (Sprint 2) | TC-BK-01-01 to TC-BK-48-02 |
@@ -33,7 +33,7 @@ a recorded result. Cases not run or partly run are listed in section 4 with the 
 
 ### 3.1 Cart, checkout and order tracking (B S Keertana)
 
-Run on 5 November 2026 and again on 16 November 2026 (API cases, see the System Validation Report). Full cases: [cart-checkout/Test_Case_Document.md](cart-checkout/Test_Case_Document.md).
+Run on 5 November 2026 and again on 17 November 2026 (API cases, see the System Validation Report). TC-SEC-08 was added on 17 November 2026. Full cases: [cart-checkout/Test_Case_Document.md](cart-checkout/Test_Case_Document.md).
 
 | ID | Scenario | Result |
 |---|---|---|
@@ -73,6 +73,7 @@ Run on 5 November 2026 and again on 16 November 2026 (API cases, see the System 
 | TC-TRK-11 | Status machine blocks invalid staff transitions | Pass |
 | TC-TST-01 | Order service testable without payment service | Pass |
 | TC-MNT-01 | Business logic separated into service modules | Pass |
+| TC-SEC-08 | Book create, edit, restock and disable need a staff login: no token 401, customer 403, staff 200, reads stay public (DEF-04 regression, 17 Nov) | Pass |
 
 ### 3.2 Catalog, search and performance (Anushka Kumar)
 
@@ -186,9 +187,9 @@ Live checks against a local MongoDB, plus regression suites. See the member's do
 | DEF-01 | Admin orders | Staff order routes (`/admin/orders`) were not mounted in the cart module, so staff could not list or update orders (found by TC-TRK-06, TC-TRK-11) | High | Fixed, regression test added, merged (PR #62) |
 | DEF-02 | Checkout | A payment timeout returned `INTERNAL_ERROR` instead of `PAYMENT_TIMEOUT` (found by TC-ORD-07) | Medium | Fixed, regression test added, merged (PR #62) |
 | DEF-03 | Security | Security-event log entries had no timestamp or user ID, although Appendix A TC-SEC-06 expects them | Medium | Fixed and retested by the auth owner (merged, PR #64) |
-| DEF-04 | Admin catalog / security | On `main`, `POST /api/books`, `PUT /api/books/:id`, `PATCH /api/books/:id/stock` and `PATCH /api/books/:id/disable` have no authentication. On 16 Nov 2026 a `POST /api/books` with no token returned 201 against a live server built from `a779478`. This breaks SEC-002 and TC-SEC-01 for the book routes. The admin test record reports 401 and 403 on a local checkout after a fix, but that fix is not on `main` | High | **Open** on `main`: the fix needs to be merged, then TC-BK-20-02, TC-BK-21-03 and TC-BK-22-02 re-run against `main` |
+| DEF-04 | Admin catalog / security | On `main` at `a779478` and `adec1d9`, `POST /api/books`, `PUT /api/books/:id`, `PATCH /api/books/:id/stock` and `PATCH /api/books/:id/disable` had no authentication: on 16 Nov 2026 a `POST /api/books` with no token returned 201 against a live server. This broke SEC-002 for the book routes | High | **Fixed** (17 Nov 2026): the four routes now need an ADMIN_STAFF login (no token 401, customer 403), the admin catalog screen sends the staff token, and regression case TC-SEC-08 passes on a live server. Merged once the fix PR is merged |
 
-DEF-04 note: the unit tests do not load the book routes in `server/index.js` (the server package's coverage run never imports
+DEF-04 note: before the fix, the unit tests did not load the book routes in `server/index.js` (the server package's coverage run never imports
 it), and the auth owner's TC-SEC-01 record says the admin handler "was not called", so neither exercised the real book routes.
 The gap was found by sending a live request.
 
@@ -199,8 +200,8 @@ The gap was found by sending a live request.
 | Catalog: browse, search, details, pagination | TC-CAT-01 to 15 |
 | FR-006 to FR-012, FR-016 (cart, checkout, orders, staff order status) | TC-CART, TC-ORD, TC-TRK, TC-BK-42 to 44 |
 | FR-001, FR-002 (register, login) | TC-AUTH-01 to 08 |
-| SEC-001 to SEC-006 | TC-AUTH, TC-SEC, TC-CART-03, TC-TRK-08, TC-ORD-11; SEC-002 has the open DEF-04 |
-| Admin books and stock management | TC-BK-20 to 22 (on a local checkout with the fix; see DEF-04) |
+| SEC-001 to SEC-006 | TC-AUTH, TC-SEC, TC-CART-03, TC-TRK-08, TC-ORD-11; SEC-002 on the book routes: TC-SEC-08 (DEF-04, fixed) |
+| Admin books and stock management | TC-BK-20 to 22 (run on a local checkout; the login requirement on `main` is covered by TC-SEC-08, see DEF-04) |
 | NFR performance (catalog under 50 users) | TC-PERF-01 to 03 |
 | NFR-004 to NFR-006 (retry safety, no duplicate orders, stock) | TC-ORD-07, 08, 09, 12, TC-TRK-09, 10 |
 | Usability (order in five screens or fewer) | Walkthrough document only; TC-USA-01 not run |
