@@ -62,7 +62,8 @@ async function main() {
   const { token, role } = login.body;
 
   const title = `SYSTEST UI Book ${runId}`;
-  const created = await call('POST', '/api/books', { body: { title, author: 'UI Tester', category: 'SystemTest', price: 499, stock: 5 } });
+  const adminLogin = await call('POST', '/api/v1/auth/login', { body: { email: 'admin@example.com', password: PASSWORD } });
+  const created = await call('POST', '/api/books', { token: adminLogin.body.token, body: { title, author: 'UI Tester', category: 'SystemTest', price: 499, stock: 5 } });
   const bookId = created.body.book._id;
 
   const browser = await chromium.launch();

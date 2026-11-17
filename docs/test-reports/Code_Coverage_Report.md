@@ -1,7 +1,7 @@
 # Code Coverage Report (consolidated, project-wide)
 
 Team 15 · Online Bookstore (BookNest) · UE24CS341A Software Engineering
-Measured on 16 November 2026 on a fresh clone of `main` at `a779478`. Compiled by B S Keertana.
+Backend and server measured on 16 November 2026 on a fresh clone of `main` at `a779478`. Client re-measured on 17 November 2026 after the DEF-04 change (`App.jsx` gained 2 lines; no other backend or client code that has unit tests changed). Compiled by B S Keertana.
 
 Tools: Jest with Istanbul (`jest --coverage`) for `backend/`; Vitest with V8 (`vitest --coverage`) for `client/`; Node's built-in
 test coverage (`node --test --experimental-test-coverage`) for `server/`.
@@ -42,13 +42,13 @@ Measured: all of `client/src`.
 
 | Scope | Lines | Statements |
 |---|---|---|
-| Whole `src/` | **50.76% (267/526)** | 51.64% (298/577) |
+| Whole `src/` | **50.56% (267/528)** | 51.46% (298/579) |
 | Shop screens, API client and cart hook (cart, checkout, orders; B S Keertana) | **93.12% (230/247)** | 90.18% (257/285) |
 | Admin orders screen (Bhuvan Raj H) | **100% (35/35)** | |
 | Auth API client and login dialog (Bhagath Naveen Mullakara) | **4.65% (2/43)** | |
-| `App.jsx` and `main.jsx` (catalog screens, admin catalog screen, app shell) | **0% (0/201)** | |
+| `App.jsx` and `main.jsx` (catalog screens, admin catalog screen, app shell) | **0% (0/202)** | |
 
-The low whole-`src` figure comes from one large file: `App.jsx` (200 lines) holds the catalog, admin catalog and auth wiring and has
+The low whole-`src` figure comes from one large file: `App.jsx` (202 lines) holds the catalog, admin catalog and auth wiring and has
 no unit test. The shop and admin order screens, which have unit tests, are covered above 93%.
 
 ## 4. Server package (8 tests)

@@ -6,8 +6,8 @@
     "phase": "success",
     "result": "Pass",
     "actual": "✔ POST /cart/items returned 200; ✔ cart has 1 line, quantity 1",
-    "durationMs": 36,
-    "ranAt": "2026-11-16T17:15:27.543Z"
+    "durationMs": 35,
+    "ranAt": "2026-11-17T15:44:47.536Z"
   },
   {
     "id": "TC-CART-02",
@@ -17,7 +17,7 @@
     "result": "Pass",
     "actual": "✔ returned 409 OUT_OF_STOCK; ✔ cart has 0 lines afterwards",
     "durationMs": 11,
-    "ranAt": "2026-11-16T17:15:27.543Z"
+    "ranAt": "2026-11-17T15:44:47.537Z"
   },
   {
     "id": "TC-CART-03",
@@ -26,8 +26,8 @@
     "phase": "success",
     "result": "Pass",
     "actual": "✔ returned 401 UNAUTHORIZED; ✔ tampered token on GET /cart returned 401",
-    "durationMs": 6,
-    "ranAt": "2026-11-16T17:15:27.543Z"
+    "durationMs": 8,
+    "ranAt": "2026-11-17T15:44:47.537Z"
   },
   {
     "id": "TC-CART-04",
@@ -36,8 +36,8 @@
     "phase": "success",
     "result": "Pass",
     "actual": "✔ PATCH returned 200; ✔ quantity is 3; ✔ total is 300",
-    "durationMs": 22,
-    "ranAt": "2026-11-16T17:15:27.543Z"
+    "durationMs": 29,
+    "ranAt": "2026-11-17T15:44:47.537Z"
   },
   {
     "id": "TC-CART-05",
@@ -47,7 +47,7 @@
     "result": "Pass",
     "actual": "✔ quantity 0 returned 422 VALIDATION_ERROR; ✔ quantity -1 returned 422 VALIDATION_ERROR; ✔ quantity 6 returned 409 OUT_OF_STOCK; ✔ quantity 5 returned 200",
     "durationMs": 46,
-    "ranAt": "2026-11-16T17:15:27.543Z"
+    "ranAt": "2026-11-17T15:44:47.537Z"
   },
   {
     "id": "TC-CART-06",
@@ -57,7 +57,7 @@
     "result": "Pass",
     "actual": "✔ DELETE returned 200; ✔ 1 line left; ✔ total is 25",
     "durationMs": 32,
-    "ranAt": "2026-11-16T17:15:27.543Z"
+    "ranAt": "2026-11-17T15:44:47.537Z"
   },
   {
     "id": "TC-CART-07",
@@ -66,8 +66,8 @@
     "phase": "success",
     "result": "Pass",
     "actual": "✔ total is 1248.50",
-    "durationMs": 31,
-    "ranAt": "2026-11-16T17:15:27.543Z"
+    "durationMs": 28,
+    "ranAt": "2026-11-17T15:44:47.537Z"
   },
   {
     "id": "TC-CART-08",
@@ -76,8 +76,8 @@
     "phase": "success",
     "result": "Pass",
     "actual": "✔ status 200, total 0.00, 0 lines",
-    "durationMs": 4,
-    "ranAt": "2026-11-16T17:15:27.543Z"
+    "durationMs": 5,
+    "ranAt": "2026-11-17T15:44:47.537Z"
   },
   {
     "id": "TC-CART-09",
@@ -86,8 +86,8 @@
     "phase": "success",
     "result": "Pass",
     "actual": "✔ book disabled (200); ✔ disabled line available=false; ✔ total is 100.00 (disabled book excluded); ✔ checkout returned 409 OUT_OF_STOCK; ✔ orders before 0, after 0",
-    "durationMs": 52,
-    "ranAt": "2026-11-16T17:15:27.543Z"
+    "durationMs": 55,
+    "ranAt": "2026-11-17T15:44:47.537Z"
   },
   {
     "id": "TC-ORD-01",
@@ -96,8 +96,8 @@
     "phase": "success",
     "result": "Pass",
     "actual": "✔ returned 422 CART_EMPTY; ✔ orders before 0, after 0",
-    "durationMs": 11,
-    "ranAt": "2026-11-16T17:15:27.543Z"
+    "durationMs": 13,
+    "ranAt": "2026-11-17T15:44:47.537Z"
   },
   {
     "id": "TC-ORD-02",
@@ -107,7 +107,7 @@
     "result": "Pass",
     "actual": "✔ address \"\" returned 422 VALIDATION_ERROR field=shippingAddress; ✔ address \"   \" returned 422 VALIDATION_ERROR field=shippingAddress; ✔ address undefined returned 422 VALIDATION_ERROR field=shippingAddress; ✔ stock unchanged (5)",
     "durationMs": 24,
-    "ranAt": "2026-11-16T17:15:27.543Z"
+    "ranAt": "2026-11-17T15:44:47.537Z"
   },
   {
     "id": "TC-ORD-03",
@@ -116,8 +116,8 @@
     "phase": "success",
     "result": "Pass",
     "actual": "✔ 301 characters returned 422 VALIDATION_ERROR; ✔ 300 characters returned 201",
-    "durationMs": 28,
-    "ranAt": "2026-11-16T17:15:27.543Z"
+    "durationMs": 26,
+    "ranAt": "2026-11-17T15:44:47.537Z"
   },
   {
     "id": "TC-ORD-04",
@@ -125,9 +125,9 @@
     "expected": "201; PLACED, SUCCESS, orderNumber present; stock reduced; cart emptied",
     "phase": "success",
     "result": "Pass",
-    "actual": "✔ returned 201; ✔ status PLACED, payment SUCCESS; ✔ orderNumber ORD-20261116-3E8C5231; ✔ total 998.00; ✔ stock is 3 (5 - 2); ✔ cart emptied",
-    "durationMs": 26,
-    "ranAt": "2026-11-16T17:15:27.543Z"
+    "actual": "✔ returned 201; ✔ status PLACED, payment SUCCESS; ✔ orderNumber ORD-20261117-A50B59F6; ✔ total 998.00; ✔ stock is 3 (5 - 2); ✔ cart emptied",
+    "durationMs": 24,
+    "ranAt": "2026-11-17T15:44:47.537Z"
   },
   {
     "id": "TC-ORD-05",
@@ -135,9 +135,9 @@
     "expected": "Two different orderNumber values",
     "phase": "success",
     "result": "Pass",
-    "actual": "✔ statuses 201, 201; ✔ ORD-20261116-EA607839 vs ORD-20261116-85309B7A",
-    "durationMs": 34,
-    "ranAt": "2026-11-16T17:15:27.543Z"
+    "actual": "✔ statuses 201, 201; ✔ ORD-20261117-E3A311F6 vs ORD-20261117-5FEE8475",
+    "durationMs": 32,
+    "ranAt": "2026-11-17T15:44:47.537Z"
   },
   {
     "id": "TC-ORD-08",
@@ -146,8 +146,8 @@
     "phase": "success",
     "result": "Pass",
     "actual": "✔ first customer returned 201; ✔ second customer returned 409 OUT_OF_STOCK; ✔ second customer's orders before 4, after 4; ✔ stock is 0",
-    "durationMs": 51,
-    "ranAt": "2026-11-16T17:15:27.543Z"
+    "durationMs": 53,
+    "ranAt": "2026-11-17T15:44:47.537Z"
   },
   {
     "id": "TC-ORD-09",
@@ -156,8 +156,18 @@
     "phase": "success",
     "result": "Pass",
     "actual": "✔ 10/10 rounds gave one 201 and one 409 with stock 0 (201/409 stock 0 | 201/409 stock 0 | 201/409 stock 0 | 201/409 stock 0 | 201/409 stock 0 | 201/409 stock 0 | 201/409 stock 0 | 201/409 stock 0 | 201/409 stock 0 | 201/409 stock 0)",
-    "durationMs": 406,
-    "ranAt": "2026-11-16T17:15:27.543Z"
+    "durationMs": 405,
+    "ranAt": "2026-11-17T15:44:47.537Z"
+  },
+  {
+    "id": "TC-SEC-08",
+    "title": "Book create, edit, restock and disable need a staff login (DEF-04 regression)",
+    "expected": "No token 401, customer token 403, staff token succeeds; reads stay public",
+    "phase": "success",
+    "result": "Pass",
+    "actual": "✔ POST /api/books with no token returned 401; ✔ POST /api/books as CUSTOMER returned 403; ✔ PUT /api/books/:id with no token returned 401; ✔ PUT /api/books/:id as CUSTOMER returned 403; ✔ PATCH /api/books/:id/stock with no token returned 401; ✔ PATCH /api/books/:id/stock as CUSTOMER returned 403; ✔ PATCH /api/books/:id/disable with no token returned 401; ✔ PATCH /api/books/:id/disable as CUSTOMER returned 403; ✔ stock unchanged at 3 after the refused calls; ✔ PATCH stock as ADMIN_STAFF returned 200; ✔ GET /api/books without a token still returns 200",
+    "durationMs": 29,
+    "ranAt": "2026-11-17T15:44:47.537Z"
   },
   {
     "id": "TC-ORD-11",
@@ -167,7 +177,7 @@
     "result": "Pass",
     "actual": "✔ GET /api/v1/cart as ADMIN_STAFF returned 403 FORBIDDEN; ✔ GET /api/v1/orders as ADMIN_STAFF returned 403 FORBIDDEN; ✔ POST /api/v1/orders as ADMIN_STAFF returned 403 FORBIDDEN",
     "durationMs": 5,
-    "ranAt": "2026-11-16T17:15:27.543Z"
+    "ranAt": "2026-11-17T15:44:47.537Z"
   },
   {
     "id": "TC-ORD-12",
@@ -176,8 +186,8 @@
     "phase": "success",
     "result": "Pass",
     "actual": "✔ key undefined returned 422 VALIDATION_ERROR; ✔ key \"abc\" returned 422 VALIDATION_ERROR; ✔ key \"1234\" returned 422 VALIDATION_ERROR; ✔ stock unchanged",
-    "durationMs": 24,
-    "ranAt": "2026-11-16T17:15:27.543Z"
+    "durationMs": 23,
+    "ranAt": "2026-11-17T15:44:47.537Z"
   },
   {
     "id": "TC-ORD-14",
@@ -186,8 +196,8 @@
     "phase": "success",
     "result": "Pass",
     "actual": "✔ returned 201, total 400.00 (cart total 400.00)",
-    "durationMs": 17,
-    "ranAt": "2026-11-16T17:15:27.543Z"
+    "durationMs": 18,
+    "ranAt": "2026-11-17T15:44:47.537Z"
   },
   {
     "id": "TC-TRK-07",
@@ -197,7 +207,7 @@
     "result": "Pass",
     "actual": "✔ returned 200, 0 orders",
     "durationMs": 2,
-    "ranAt": "2026-11-16T17:15:27.543Z"
+    "ranAt": "2026-11-17T15:44:47.537Z"
   },
   {
     "id": "TC-TRK-08",
@@ -207,7 +217,7 @@
     "result": "Pass",
     "actual": "✔ GET /api/v1/orders returned 401 UNAUTHORIZED; ✔ GET /api/v1/orders/000000000000000000000000 returned 401 UNAUTHORIZED; ✔ PATCH /api/v1/orders/000000000000000000000000/cancel returned 401 UNAUTHORIZED",
     "durationMs": 5,
-    "ranAt": "2026-11-16T17:15:27.543Z"
+    "ranAt": "2026-11-17T15:44:47.537Z"
   },
   {
     "id": "TC-TRK-01",
@@ -216,8 +226,8 @@
     "phase": "success",
     "result": "Pass",
     "actual": "✔ 3 orders returned; ✔ newest first; ✔ each has a status and number; ✔ another customer's list does not contain them",
-    "durationMs": 118,
-    "ranAt": "2026-11-16T17:15:27.543Z"
+    "durationMs": 109,
+    "ranAt": "2026-11-17T15:44:47.537Z"
   },
   {
     "id": "TC-TRK-02",
@@ -226,8 +236,8 @@
     "phase": "success",
     "result": "Pass",
     "actual": "✔ returned 200; ✔ items 1, total 30.00; ✔ status PLACED; ✔ statusHistory [\"PLACED\"]",
-    "durationMs": 4,
-    "ranAt": "2026-11-16T17:15:27.543Z"
+    "durationMs": 2,
+    "ranAt": "2026-11-17T15:44:47.537Z"
   },
   {
     "id": "TC-TRK-03",
@@ -236,8 +246,8 @@
     "phase": "success",
     "result": "Pass",
     "actual": "✔ detail returned 404 ORDER_NOT_FOUND; ✔ response has no order data; ✔ cancel returned 404; ✔ owner still sees PLACED; ✔ malformed id returned 404",
-    "durationMs": 10,
-    "ranAt": "2026-11-16T17:15:27.543Z"
+    "durationMs": 9,
+    "ranAt": "2026-11-17T15:44:47.537Z"
   },
   {
     "id": "TC-TRK-05",
@@ -246,8 +256,8 @@
     "phase": "success",
     "result": "Pass",
     "actual": "✔ stock after order 3; ✔ returned 200 CANCELLED; ✔ stock after cancel 5; ✔ history PLACED>CANCELLED",
-    "durationMs": 30,
-    "ranAt": "2026-11-16T17:15:27.543Z"
+    "durationMs": 33,
+    "ranAt": "2026-11-17T15:44:47.537Z"
   },
   {
     "id": "TC-TRK-06",
@@ -256,8 +266,8 @@
     "phase": "success",
     "result": "Pass",
     "actual": "✔ staff moved it to PROCESSING (200); ✔ cancel returned 409 INVALID_ORDER_STATUS_TRANSITION; ✔ status still PROCESSING; ✔ stock not restored (4)",
-    "durationMs": 31,
-    "ranAt": "2026-11-16T17:15:27.543Z"
+    "durationMs": 44,
+    "ranAt": "2026-11-17T15:44:47.537Z"
   },
   {
     "id": "TC-TRK-09",
@@ -266,8 +276,8 @@
     "phase": "success",
     "result": "Pass",
     "actual": "✔ first cancel 200; ✔ second cancel 409 INVALID_ORDER_STATUS_TRANSITION; ✔ stock 5 (not 7)",
-    "durationMs": 27,
-    "ranAt": "2026-11-16T17:15:27.543Z"
+    "durationMs": 33,
+    "ranAt": "2026-11-17T15:44:47.537Z"
   },
   {
     "id": "TC-TRK-10",
@@ -276,8 +286,8 @@
     "phase": "success",
     "result": "Pass",
     "actual": "✔ 10/10 rounds correct (200/409 stock 5 | 200/409 stock 5 | 200/409 stock 5 | 200/409 stock 5 | 200/409 stock 5 | 200/409 stock 5 | 200/409 stock 5 | 200/409 stock 5 | 200/409 stock 5 | 200/409 stock 5)",
-    "durationMs": 274,
-    "ranAt": "2026-11-16T17:15:27.543Z"
+    "durationMs": 519,
+    "ranAt": "2026-11-17T15:44:47.537Z"
   },
   {
     "id": "TC-TRK-11",
@@ -286,7 +296,7 @@
     "phase": "success",
     "result": "Pass",
     "actual": "✔ PLACED -> DELIVERED returned 409 INVALID_ORDER_STATUS_TRANSITION; ✔ PROCESSING/SHIPPED/DELIVERED returned 200/200/200; ✔ DELIVERED -> PROCESSING returned 409; ✔ customer token on admin route returned 403",
-    "durationMs": 42,
-    "ranAt": "2026-11-16T17:15:27.543Z"
+    "durationMs": 39,
+    "ranAt": "2026-11-17T15:44:47.537Z"
   }
 ]

@@ -14,6 +14,7 @@ PASS  TC-ORD-04  Successful checkout creates order
 PASS  TC-ORD-05  Order numbers are unique
 PASS  TC-ORD-08  Item sold out between cart and checkout
 PASS  TC-ORD-09  Concurrent checkout of last copy (10 rounds)
+PASS  TC-SEC-08  Book create, edit, restock and disable need a staff login (DEF-04 regression)
 PASS  TC-ORD-11  Staff accounts cannot use the cart or orders (new in Part 3)
 PASS  TC-ORD-12  Idempotency-Key must be a UUID (new in Part 3)
 PASS  TC-ORD-14  Tampered total in the request body is ignored (new in Part 3)
@@ -28,4 +29,4 @@ PASS  TC-TRK-09  Cancelling twice restores stock once (new in Part 3)
 PASS  TC-TRK-10  Two cancels at the same moment restore stock once, 10 rounds (new in Part 3)
 PASS  TC-TRK-11  Status machine blocks invalid staff transitions (new in Part 3)
 
-success: 29/29 passed
+success: 30/30 passed

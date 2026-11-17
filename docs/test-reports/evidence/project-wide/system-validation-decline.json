@@ -7,7 +7,7 @@
     "result": "Pass",
     "actual": "✔ returned 402 PAYMENT_DECLINED; ✔ stock restored (5); ✔ cart kept (1 line, quantity 2); ✔ database holds 1 FAILED order(s), status CANCELLED; ✔ database holds 0 confirmed orders",
     "durationMs": 51,
-    "ranAt": "2026-11-16T17:15:37.920Z"
+    "ranAt": "2026-11-17T15:44:58.195Z"
   },
   {
     "id": "TC-ORD-13",
@@ -16,7 +16,7 @@
     "phase": "decline",
     "result": "Pass",
     "actual": "✔ history has 0 orders; ✔ a decline happened in TC-ORD-06",
-    "durationMs": 11,
-    "ranAt": "2026-11-16T17:15:37.920Z"
+    "durationMs": 12,
+    "ranAt": "2026-11-17T15:44:58.195Z"
   }
 ]
