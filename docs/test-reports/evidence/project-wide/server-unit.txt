@@ -1,0 +1,58 @@
+TAP version 13
+# Subtest: book data validation accepts valid book details
+ok 1 - book data validation accepts valid book details
+  ---
+  duration_ms: 1.030174
+  type: 'test'
+  ...
+# Subtest: book data validation rejects negative stock
+ok 2 - book data validation rejects negative stock
+  ---
+  duration_ms: 0.314304
+  type: 'test'
+  ...
+# Subtest: book data validation rejects a zero price
+ok 3 - book data validation rejects a zero price
+  ---
+  duration_ms: 0.130835
+  type: 'test'
+  ...
+# Subtest: security middleware strips Mongo operators and sets Helmet/request ID headers
+ok 4 - security middleware strips Mongo operators and sets Helmet/request ID headers
+  ---
+  duration_ms: 42.799855
+  type: 'test'
+  ...
+# Subtest: central errors use the envelope without exposing stack details
+ok 5 - central errors use the envelope without exposing stack details
+  ---
+  duration_ms: 7.933513
+  type: 'test'
+  ...
+# Subtest: a payment timeout keeps its SAD code PAYMENT_TIMEOUT (API-09) but other 5xx stay generic
+ok 6 - a payment timeout keeps its SAD code PAYMENT_TIMEOUT (API-09) but other 5xx stay generic
+  ---
+  duration_ms: 12.678936
+  type: 'test'
+  ...
+# Subtest: malformed JSON also returns the standard client error envelope
+ok 7 - malformed JSON also returns the standard client error envelope
+  ---
+  duration_ms: 5.387707
+  type: 'test'
+  ...
+# Subtest: security events include timestamp, request metadata and known user id without credentials
+ok 8 - security events include timestamp, request metadata and known user id without credentials
+  ---
+  duration_ms: 0.549161
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 298.171923

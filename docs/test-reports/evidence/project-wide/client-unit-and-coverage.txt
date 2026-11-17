@@ -1,0 +1,103 @@
+
+ RUN  v5.0.5 client
+      Coverage enabled with v8
+
+ ✓ src/components/shop/CheckoutPage.test.jsx > CheckoutPage > shows the server total and the order lines 66ms
+ ✓ src/components/shop/CheckoutPage.test.jsx > CheckoutPage > will not place an order without an address 109ms
+ ✓ src/components/shop/CheckoutPage.test.jsx > CheckoutPage > accepts exactly 300 characters and rejects 301 (TC-ORD-03) 41ms
+ ✓ src/components/shop/CheckoutPage.test.jsx > CheckoutPage > places the order with a UUID key and hands the order to the confirmation 34ms
+ ✓ src/components/shop/CheckoutPage.test.jsx > CheckoutPage > after a timeout the retry sends the SAME key (NFR-004, TC-ORD-07) 58ms
+ ✓ src/components/shop/CheckoutPage.test.jsx > CheckoutPage > after a decline the next try uses a NEW key and the cart is kept (TC-ORD-06) 46ms
+ ✓ src/components/shop/CheckoutPage.test.jsx > CheckoutPage > a lost connection keeps the key, so the order cannot be created twice 48ms
+ ✓ src/components/shop/CheckoutPage.test.jsx > CheckoutPage > explains which book ran out of stock and links back to the cart (TC-ORD-08) 44ms
+ ✓ src/components/shop/CheckoutPage.test.jsx > CheckoutPage > blocks checkout when an item is no longer available 16ms
+ ✓ src/components/shop/CheckoutPage.test.jsx > CheckoutPage > shows an empty-cart message instead of the form 5ms
+ ✓ src/components/shop/CheckoutPage.test.jsx > CheckoutPage > asks the customer to log in on 401 18ms
+ ✓ src/components/shop/CheckoutPage.test.jsx > OrderConfirmation > shows the unique order number, status PLACED and the total (TC-ORD-04, TC-ORD-10) 7ms
+ ✓ src/components/shop/CheckoutPage.test.jsx > OrderConfirmation > links to order history and back to shopping 25ms
+ ✓ src/components/shop/CartPage.test.jsx > CartPage > shows each line with its subtotal and the server total 70ms
+ ✓ src/components/shop/CartPage.test.jsx > CartPage > shows a friendly empty cart with a way back to the catalog 158ms
+ ✓ src/components/shop/CartPage.test.jsx > CartPage > increases the quantity and shows the new total from the server 45ms
+ ✓ src/components/shop/CartPage.test.jsx > CartPage > cannot decrease below 1 (use Remove instead) 20ms
+ ✓ src/components/shop/CartPage.test.jsx > CartPage > typing a quantity and pressing Enter sends it once 49ms
+ ✓ src/components/shop/CartPage.test.jsx > CartPage > never sends the invalid quantity "0" 54ms
+ ✓ src/components/shop/CartPage.test.jsx > CartPage > never sends the invalid quantity "-1" 55ms
+ ✓ src/components/shop/CartPage.test.jsx > CartPage > never sends the invalid quantity "1.5" 53ms
+ ✓ src/components/shop/CartPage.test.jsx > CartPage > never sends the invalid quantity "" 27ms
+ ✓ src/components/shop/CartPage.test.jsx > CartPage > removes an item and updates the total 31ms
+ ✓ src/components/shop/CartPage.test.jsx > CartPage > explains when there is not enough stock and keeps the old quantity 28ms
+ ✓ src/components/shop/CartPage.test.jsx > CartPage > flags a book that is no longer available and blocks checkout until it is removed 35ms
+ ✓ src/components/shop/CartPage.test.jsx > CartPage > asks the customer to log in when the server answers 401 15ms
+ ✓ src/components/shop/CartPage.test.jsx > CartPage > shows a retry when the server cannot be reached, then recovers 17ms
+ ✓ src/components/shop/CartPage.test.jsx > CartPage > proceed to checkout calls onCheckout 19ms
+ ✓ src/components/shop/OrdersPage.test.jsx > OrdersPage: history > lists the orders in the order the server sends (newest first) with status and total (TC-TRK-01) 172ms
+ ✓ src/components/shop/OrdersPage.test.jsx > OrdersPage: history > says 'No orders yet' when the list is empty (TC-TRK-07) 45ms
+ ✓ src/components/shop/OrdersPage.test.jsx > OrdersPage: history > asks the customer to log in when the server answers 401 (TC-TRK-08) 19ms
+ ✓ src/components/shop/OrdersPage.test.jsx > OrdersPage: history > offers a retry when the server cannot be reached 19ms
+ ✓ src/components/shop/OrdersPage.test.jsx > OrdersPage: detail and cancel > shows items, total, address and status history (TC-TRK-02) 38ms
+ ✓ src/components/shop/OrdersPage.test.jsx > OrdersPage: detail and cancel > cancels a PLACED order after a confirmation step (TC-TRK-05) 74ms
+ ✓ src/components/shop/OrdersPage.test.jsx > OrdersPage: detail and cancel > "Keep order" backs out without cancelling 64ms
+ ✓ src/components/shop/OrdersPage.test.jsx > OrdersPage: detail and cancel > offers no Cancel button once the order is PROCESSING (TC-TRK-06) 27ms
+ ✓ src/components/shop/OrdersPage.test.jsx > OrdersPage: detail and cancel > offers no Cancel button once the order is SHIPPED (TC-TRK-06) 25ms
+ ✓ src/components/shop/OrdersPage.test.jsx > OrdersPage: detail and cancel > offers no Cancel button once the order is DELIVERED (TC-TRK-06) 28ms
+ ✓ src/components/shop/OrdersPage.test.jsx > OrdersPage: detail and cancel > shows the real status when staff moved the order on before the customer cancelled 76ms
+ ✓ src/components/shop/OrdersPage.test.jsx > OrdersPage: detail and cancel > going back refreshes the list 44ms
+ ✓ src/api/shopApi.test.js > shopApi: cart > sends the bearer token and returns the cart 2ms
+ ✓ src/api/shopApi.test.js > shopApi: cart > sends no Authorization header when there is no token 0ms
+ ✓ src/api/shopApi.test.js > shopApi: cart > uses the documented methods, paths and bodies 0ms
+ ✓ src/api/shopApi.test.js > shopApi: orders > checkout sends the address in the body and the Idempotency-Key as a header 0ms
+ ✓ src/api/shopApi.test.js > shopApi: orders > history, detail and cancel use the documented methods and paths 0ms
+ ✓ src/api/shopApi.test.js > shopApi: orders > makes a valid version-4 UUID for every checkout attempt 1ms
+ ✓ src/api/shopApi.test.js > shopApi: admin orders > lists admin orders and optionally filters by status 0ms
+ ✓ src/api/shopApi.test.js > shopApi: admin orders > updates an admin order status with the JWT and requested status 0ms
+ ✓ src/api/shopApi.test.js > shopApi: errors > turns the standard error envelope into an ApiError 1ms
+ ✓ src/api/shopApi.test.js > shopApi: errors > reports an unreachable server as NETWORK_ERROR 0ms
+ ✓ src/api/shopApi.test.js > shopApi: errors > treats a 401 without a body as UNAUTHORIZED 0ms
+ ✓ src/api/shopApi.test.js > shopApi: errors > keeps the order error codes the screens react to 0ms
+ ✓ src/components/admin/AdminOrdersPage.test.jsx > AdminOrdersPage > lists incoming orders and filters by status 153ms
+ ✓ src/components/admin/AdminOrdersPage.test.jsx > AdminOrdersPage > updates an order with a valid next status 31ms
+ ✓ src/components/admin/AdminOrdersPage.test.jsx > AdminOrdersPage > shows invalid-transition API errors 34ms
+ ✓ src/components/admin/AdminOrdersPage.test.jsx > AdminOrdersPage > shows an empty state 8ms
+ ✓ src/components/admin/AdminOrdersPage.test.jsx > AdminOrdersPage > shows loading and then terminal-status information 14ms
+ ✓ src/components/admin/AdminOrdersPage.test.jsx > AdminOrdersPage > shows list API failures and keeps unauthorized handling out of the customer UI 11ms
+ ✓ src/components/admin/AdminOrdersPage.test.jsx > AdminOrdersPage > logs out when an update returns unauthenticated 33ms
+
+ Test Files  5 passed (5)
+      Tests  59 passed (59)
+   Start at  22:41:24
+   Duration  6.10s (tests 41%, environment 41%, import 11%, transform 5%, worker 3%)
+
+    Isolate  5 workers spawned · ~513ms startup each (spawn + environment, per file)
+             at least ~2.05s faster with isolate: false — reuses workers across files instead of one per file
+
+JSON report written to vitest.json
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   51.64 |    42.64 |   54.96 |   50.76 |                   
+ src               |       0 |        0 |       0 |       0 |                   
+  App.jsx          |       0 |        0 |       0 |       0 | 15-954            
+  main.jsx         |       0 |      100 |     100 |       0 | 6                 
+ src/api           |   70.68 |    76.31 |   73.68 |   69.09 |                   
+  authApi.js       |   15.38 |    33.33 |       0 |   15.38 | 7-39              
+  shopApi.js       |   86.66 |    84.37 |    87.5 |   85.71 | 24-27,35-37       
+ src/components    |       0 |        0 |       0 |       0 |                   
+  AuthDialog.jsx   |       0 |        0 |       0 |       0 | 5-131             
+ ...mponents/admin |    97.5 |    78.04 |   91.66 |     100 |                   
+  ...rdersPage.jsx |    97.5 |    78.04 |   91.66 |     100 | ...3,79,85-94,100 
+ ...omponents/shop |   89.67 |    79.83 |   96.15 |   93.88 |                   
+  CartPage.jsx     |   95.12 |    92.98 |    92.3 |   96.96 | 56                
+  CheckoutPage.jsx |   96.66 |    86.56 |     100 |     100 | ...2,71-74,77,158 
+  ...firmation.jsx |      75 |     62.5 |     100 |     100 | 9-29              
+  OrdersPage.jsx   |   98.27 |    85.71 |     100 |   98.18 | 25                
+  errors.js        |    65.9 |    57.62 |   83.33 |      75 | 23-35,53,71-75,91 
+  format.js        |   83.33 |    66.66 |     100 |     100 | 11                
+-------------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 51.64% ( 298/577 )
+Branches     : 42.64% ( 255/598 )
+Functions    : 54.96% ( 83/151 )
+Lines        : 50.76% ( 267/526 )
+================================================================================
