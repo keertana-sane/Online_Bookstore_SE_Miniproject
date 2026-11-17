@@ -149,7 +149,7 @@ Live checks against a local MongoDB, plus regression suites. See the member's do
 | TC-BK-21-02 | Reject negative stock | Pass |
 | TC-BK-21-03 | Reject stock update without authentication | Pass |
 | TC-BK-22-01 | Catalog management interface renders for admin | Pass |
-| TC-BK-22-02 | Catalog management is hidden from guests/non-admin users | Pass |
+| TC-BK-22-02 | Catalog management write actions blocked for guests/non-admin users (401/403) | Pass |
 | TC-BK-22-03 | Admin creates and edits a book from catalog UI | Pass |
 | TC-BK-22-04 | Admin UI stock prompt and disable interaction | Pass |
 | TC-BK-42-01 | Allowed and rejected transition matrix | Pass |
