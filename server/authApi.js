@@ -10,6 +10,7 @@ function mountAuthApi({
   jwtSecret,
   bcryptImpl,
   jwtImpl,
+  securityLogger,
   userRepo
 }) {
   const repository =
@@ -19,14 +20,15 @@ function mountAuthApi({
     userRepo: repository,
     expressImpl,
     bcryptImpl,
-    jwtImpl
+    jwtImpl,
+    securityLogger
   });
 
   app.use("/api/v1", router);
   app.use(
     "/api/v1/admin",
     authenticate,
-    createRequireRoleMiddleware("ADMIN_STAFF")
+    createRequireRoleMiddleware("ADMIN_STAFF", { securityLogger })
   );
 
   return { authenticate };

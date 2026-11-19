@@ -1,0 +1,26 @@
+
+> backend@1.0.0 test
+> jest --runInBand --coverage --runTestsByPath tests/authRoutes.test.js tests/authenticate.test.js tests/requireRole.test.js tests/serverAuthApi.test.js --collectCoverageFrom=services/authService.js --collectCoverageFrom=routes/authRoutes.js --collectCoverageFrom=routes/authModule.js --collectCoverageFrom=middleware/authenticate.js --collectCoverageFrom=middleware/requireRole.js --collectCoverageFrom=middleware/loginRateLimit.js --collectCoverageFrom=utils/securityEvents.js --coverageReporters=text --coverageReporters=json-summary
+
+--------------------|---------|----------|---------|---------|-------------------
+File                | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+--------------------|---------|----------|---------|---------|-------------------
+All files           |    91.3 |    81.55 |      95 |   93.28 |
+ middleware         |   87.69 |    80.76 |     100 |   91.93 |
+  authenticate.js   |      84 |       76 |     100 |    87.5 | 35-36,49
+  loginRateLimit.js |   95.83 |    86.66 |     100 |     100 | 15-18
+  requireRole.js    |   81.25 |    83.33 |     100 |   86.66 | 16-17
+ routes             |     100 |       80 |     100 |     100 |
+  authModule.js     |     100 |    66.66 |     100 |     100 | 7-8
+  authRoutes.js     |     100 |    88.88 |     100 |     100 | 65
+ services           |    87.5 |    82.35 |      75 |    87.5 |
+  authService.js    |    87.5 |    82.35 |      75 |    87.5 | 10,21,28,38
+ utils              |     100 |      100 |     100 |     100 |
+  securityEvents.js |     100 |      100 |     100 |     100 |
+--------------------|---------|----------|---------|---------|-------------------
+
+Test Suites: 4 passed, 4 total
+Tests:       38 passed, 38 total
+Snapshots:   0 total
+Time:        13.603 s
+Ran all test suites within paths "tests/authRoutes.test.js", "tests/authenticate.test.js", "tests/requireRole.test.js", "tests/serverAuthApi.test.js".

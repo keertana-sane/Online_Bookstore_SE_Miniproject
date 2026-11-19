@@ -71,8 +71,9 @@ Set `MOCK_PAYMENT_MODE` in `server/.env` and restart the server:
 ## Tests (run in CI on every push and pull request)
 
 ```bash
-cd backend && npm test    # 127 tests: cart, checkout, payment adapter, order history, cancel, auth
-cd client && npm test     # 50 tests: API client, cart, checkout, confirmation, order history, cancel
+cd backend && npm test    # 168 tests: cart, checkout, payment adapter, order history, cancel, staff orders, auth, catalog
+cd client && npm test     # 59 tests: API client, cart, checkout, confirmation, order history, cancel, staff orders
+cd server && npm test     # 7 tests: validation, security middleware, error envelope
 ```
 
 | Test plan IDs | Where |
@@ -83,8 +84,9 @@ cd client && npm test     # 50 tests: API client, cart, checkout, confirmation, 
 | TC-TRK-01 to 03, 05 to 08 | `backend/tests/orderHistory.test.js`, `client/src/components/shop/OrdersPage.test.jsx` |
 | TC-TRK-04 | `backend/tests/orderModelAndRepo.test.js` |
 
-Not covered by automated tests: running against a real MongoDB (the unit tests use in-memory stand-ins and a test
-double for the model), and the browser-level system tests TC-ORD-10 / TC-TRK-01, which need a manual run.
+The unit tests use in-memory stand-ins and a test double for the model. Running against a real MongoDB and in a real
+browser is done by the system validation scripts in `backend/tests/system/` (see `docs/test-reports/`, which also has the
+Updated Test Case Document, the Unit, System Validation, Code Coverage and Branch Coverage reports).
 
 ## Deviations from the submitted SRS / SAD / Test Plan (explain at the final demo)
 
@@ -104,6 +106,6 @@ double for the model), and the browser-level system tests TC-ORD-10 / TC-TRK-01,
 7. **Models built on the server's database connection.** `backend/` and `server/` each have their own `node_modules`, so the
    Cart and Order models and repositories are created from the server's mongoose instance (same pattern as the User model).
 8. **Customer-only routes.** `server/index.js` checks the CUSTOMER role on cart and order routes, as the SAD requires, on top of the JWT check.
-9. **Error envelope without `requestId`.** The shared error handler (`server/errorHandler.js`) does not add one.
+9. **Payment timeout code.** The shared error handler hides the code of 5xx errors; it now keeps `PAYMENT_TIMEOUT` (504) so the checkout screen can offer a retry. Other 5xx errors stay generic.
 10. **Cart UI location.** The cart screens were first written in a separate `frontend/` folder and moved into the real React app (`client/`).
-11. **Staff order updates (FR-011 transitions, TC-ADM) are not part of this module**; cancel by staff of a PROCESSING order is therefore not built.
+11. **Staff order updates** (`/admin/orders`, API-13 and API-14) share the order service and status machine. Customer cancel works only while PLACED; staff can also cancel a PROCESSING order.

@@ -1,0 +1,278 @@
+  console.warn
+    {"event":"login_failed","ip":"127.0.0.1","method":"POST","path":"/auth/login"}
+
+      1 | function logSecurityEvent(req, event) {
+    > 2 |   console.warn(JSON.stringify({
+        |           ^
+      3 |     event,
+      4 |     requestId: req.requestId,
+      5 |     ip: req.ip,
+
+      at warn (utils/securityEvents.js:2:11)
+      at securityLogger (routes/authRoutes.js:66:9)
+
+  console.warn
+    {"event":"login_failed","ip":"127.0.0.1","method":"POST","path":"/auth/login"}
+
+      1 | function logSecurityEvent(req, event) {
+    > 2 |   console.warn(JSON.stringify({
+        |           ^
+      3 |     event,
+      4 |     requestId: req.requestId,
+      5 |     ip: req.ip,
+
+      at warn (utils/securityEvents.js:2:11)
+      at securityLogger (routes/authRoutes.js:66:9)
+
+  console.warn
+    {"event":"login_failed","ip":"127.0.0.1","method":"POST","path":"/auth/login"}
+
+      1 | function logSecurityEvent(req, event) {
+    > 2 |   console.warn(JSON.stringify({
+        |           ^
+      3 |     event,
+      4 |     requestId: req.requestId,
+      5 |     ip: req.ip,
+
+      at warn (utils/securityEvents.js:2:11)
+      at securityLogger (routes/authRoutes.js:66:9)
+
+  console.warn
+    {"event":"login_failed","ip":"127.0.0.1","method":"POST","path":"/auth/login"}
+
+      1 | function logSecurityEvent(req, event) {
+    > 2 |   console.warn(JSON.stringify({
+        |           ^
+      3 |     event,
+      4 |     requestId: req.requestId,
+      5 |     ip: req.ip,
+
+      at warn (utils/securityEvents.js:2:11)
+      at securityLogger (routes/authRoutes.js:66:9)
+
+  console.warn
+    {"event":"unauthorized_access","ip":"127.0.0.1","method":"GET","path":"/books"}
+
+      1 | function logSecurityEvent(req, event) {
+    > 2 |   console.warn(JSON.stringify({
+        |           ^
+      3 |     event,
+      4 |     requestId: req.requestId,
+      5 |     ip: req.ip,
+
+      at warn (utils/securityEvents.js:2:11)
+      at securityLogger (middleware/requireRole.js:20:7)
+      at Layer.handleRequest (node_modules/router/lib/layer.js:152:17)
+      at trimPrefix (node_modules/router/index.js:342:13)
+      at node_modules/router/index.js:297:9
+      at processParams (node_modules/router/index.js:582:12)
+      at next (node_modules/router/index.js:291:5)
+      at next (middleware/authenticate.js:40:14)
+      at Layer.handleRequest (node_modules/router/lib/layer.js:152:17)
+      at trimPrefix (node_modules/router/index.js:342:13)
+      at node_modules/router/index.js:297:9
+      at processParams (node_modules/router/index.js:582:12)
+      at Immediate.next (node_modules/router/index.js:291:5)
+      at Immediate._onImmediate (node_modules/router/index.js:688:15)
+
+  console.warn
+    {"event":"unauthorized_access","ip":"127.0.0.1","method":"GET","path":"/books"}
+
+      1 | function logSecurityEvent(req, event) {
+    > 2 |   console.warn(JSON.stringify({
+        |           ^
+      3 |     event,
+      4 |     requestId: req.requestId,
+      5 |     ip: req.ip,
+
+      at warn (utils/securityEvents.js:2:11)
+      at securityLogger (middleware/requireRole.js:20:7)
+      at Layer.handleRequest (node_modules/router/lib/layer.js:152:17)
+      at trimPrefix (node_modules/router/index.js:342:13)
+      at node_modules/router/index.js:297:9
+      at processParams (node_modules/router/index.js:582:12)
+      at next (node_modules/router/index.js:291:5)
+      at next (middleware/authenticate.js:40:14)
+      at Layer.handleRequest (node_modules/router/lib/layer.js:152:17)
+      at trimPrefix (node_modules/router/index.js:342:13)
+      at node_modules/router/index.js:297:9
+      at processParams (node_modules/router/index.js:582:12)
+      at Immediate.next (node_modules/router/index.js:291:5)
+      at Immediate._onImmediate (node_modules/router/index.js:688:15)
+
+  console.warn
+    {"event":"unauthorized_access","ip":"127.0.0.1","method":"GET","path":"/orders"}
+
+      1 | function logSecurityEvent(req, event) {
+    > 2 |   console.warn(JSON.stringify({
+        |           ^
+      3 |     event,
+      4 |     requestId: req.requestId,
+      5 |     ip: req.ip,
+
+      at warn (utils/securityEvents.js:2:11)
+      at securityLogger (middleware/requireRole.js:20:7)
+      at Layer.handleRequest (node_modules/router/lib/layer.js:152:17)
+      at trimPrefix (node_modules/router/index.js:342:13)
+      at node_modules/router/index.js:297:9
+      at processParams (node_modules/router/index.js:582:12)
+      at next (node_modules/router/index.js:291:5)
+      at next (middleware/authenticate.js:40:14)
+      at Layer.handleRequest (node_modules/router/lib/layer.js:152:17)
+      at trimPrefix (node_modules/router/index.js:342:13)
+      at node_modules/router/index.js:297:9
+      at processParams (node_modules/router/index.js:582:12)
+      at Immediate.next (node_modules/router/index.js:291:5)
+      at Immediate._onImmediate (node_modules/router/index.js:688:15)
+
+  console.warn
+    {"event":"unauthorized_access","ip":"127.0.0.1","method":"GET","path":"/"}
+
+      1 | function logSecurityEvent(req, event) {
+    > 2 |   console.warn(JSON.stringify({
+        |           ^
+      3 |     event,
+      4 |     requestId: req.requestId,
+      5 |     ip: req.ip,
+
+      at warn (utils/securityEvents.js:2:11)
+      at securityLogger (middleware/requireRole.js:20:7)
+      at requireAdmin (tests/adminOrderRoutes.test.js:36:12)
+      at next (tests/adminOrderRoutes.test.js:31:5)
+      at authenticate (tests/adminOrderRoutes.test.js:34:49)
+      at Layer.handleRequest (node_modules/router/lib/layer.js:152:17)
+      at trimPrefix (node_modules/router/index.js:342:13)
+      at node_modules/router/index.js:297:9
+      at processParams (node_modules/router/index.js:582:12)
+      at next (node_modules/router/index.js:291:5)
+      at Function.handle (node_modules/router/index.js:186:3)
+      at router (node_modules/router/index.js:60:12)
+      at Layer.handleRequest (node_modules/router/lib/layer.js:152:17)
+      at trimPrefix (node_modules/router/index.js:342:13)
+      at node_modules/router/index.js:297:9
+      at processParams (node_modules/router/index.js:582:12)
+      at next (node_modules/router/index.js:291:5)
+      at read (node_modules/body-parser/lib/read.js:59:5)
+      at jsonParser (node_modules/body-parser/lib/types/json.js:60:5)
+      at Layer.handleRequest (node_modules/router/lib/layer.js:152:17)
+      at trimPrefix (node_modules/router/index.js:342:13)
+      at node_modules/router/index.js:297:9
+      at processParams (node_modules/router/index.js:582:12)
+      at next (node_modules/router/index.js:291:5)
+      at Function.handle (node_modules/router/index.js:186:3)
+      at Function.handle (node_modules/express/lib/application.js:177:15)
+      at Server.app (node_modules/express/lib/express.js:38:9)
+
+  console.warn
+    {"event":"unauthorized_access","ip":"127.0.0.1","method":"PATCH","path":"/aaaaaaaaaaaaaaaaaaaaaaaa/status"}
+
+      1 | function logSecurityEvent(req, event) {
+    > 2 |   console.warn(JSON.stringify({
+        |           ^
+      3 |     event,
+      4 |     requestId: req.requestId,
+      5 |     ip: req.ip,
+
+      at warn (utils/securityEvents.js:2:11)
+      at securityLogger (middleware/requireRole.js:20:7)
+      at requireAdmin (tests/adminOrderRoutes.test.js:36:12)
+      at next (tests/adminOrderRoutes.test.js:31:5)
+      at authenticate (tests/adminOrderRoutes.test.js:34:49)
+      at Layer.handleRequest (node_modules/router/lib/layer.js:152:17)
+      at trimPrefix (node_modules/router/index.js:342:13)
+      at node_modules/router/index.js:297:9
+      at processParams (node_modules/router/index.js:582:12)
+      at next (node_modules/router/index.js:291:5)
+      at Function.handle (node_modules/router/index.js:186:3)
+      at router (node_modules/router/index.js:60:12)
+      at Layer.handleRequest (node_modules/router/lib/layer.js:152:17)
+      at trimPrefix (node_modules/router/index.js:342:13)
+      at node_modules/router/index.js:297:9
+      at processParams (node_modules/router/index.js:582:12)
+      at next (node_modules/router/index.js:291:5)
+      at node_modules/body-parser/lib/read.js:203:5
+      at invokeCallback (node_modules/raw-body/index.js:238:16)
+      at done (node_modules/raw-body/index.js:227:7)
+      at IncomingMessage.onEnd (node_modules/raw-body/index.js:287:7)
+
+  console.warn
+    {"event":"unauthorized_access","ip":"127.0.0.1","method":"GET","path":"/"}
+
+      1 | function logSecurityEvent(req, event) {
+    > 2 |   console.warn(JSON.stringify({
+        |           ^
+      3 |     event,
+      4 |     requestId: req.requestId,
+      5 |     ip: req.ip,
+
+      at warn (utils/securityEvents.js:2:11)
+      at securityLogger (middleware/requireRole.js:20:7)
+      at requireAdmin (tests/adminOrderRoutes.test.js:36:12)
+      at next (tests/adminOrderRoutes.test.js:31:5)
+      at authenticate (tests/adminOrderRoutes.test.js:34:49)
+      at Layer.handleRequest (node_modules/router/lib/layer.js:152:17)
+      at trimPrefix (node_modules/router/index.js:342:13)
+      at node_modules/router/index.js:297:9
+      at processParams (node_modules/router/index.js:582:12)
+      at next (node_modules/router/index.js:291:5)
+      at Function.handle (node_modules/router/index.js:186:3)
+      at router (node_modules/router/index.js:60:12)
+      at Layer.handleRequest (node_modules/router/lib/layer.js:152:17)
+      at trimPrefix (node_modules/router/index.js:342:13)
+      at node_modules/router/index.js:297:9
+      at processParams (node_modules/router/index.js:582:12)
+      at next (node_modules/router/index.js:291:5)
+      at read (node_modules/body-parser/lib/read.js:59:5)
+      at jsonParser (node_modules/body-parser/lib/types/json.js:60:5)
+      at Layer.handleRequest (node_modules/router/lib/layer.js:152:17)
+      at trimPrefix (node_modules/router/index.js:342:13)
+      at node_modules/router/index.js:297:9
+      at processParams (node_modules/router/index.js:582:12)
+      at next (node_modules/router/index.js:291:5)
+      at Function.handle (node_modules/router/index.js:186:3)
+      at Function.handle (node_modules/express/lib/application.js:177:15)
+      at Server.app (node_modules/express/lib/express.js:38:9)
+
+  console.warn
+    {"event":"unauthorized_access","ip":"127.0.0.1","method":"GET","path":"/"}
+
+      1 | function logSecurityEvent(req, event) {
+    > 2 |   console.warn(JSON.stringify({
+        |           ^
+      3 |     event,
+      4 |     requestId: req.requestId,
+      5 |     ip: req.ip,
+
+      at warn (utils/securityEvents.js:2:11)
+      at securityLogger (middleware/requireRole.js:20:7)
+      at requireAdmin (tests/adminOrderRoutes.test.js:36:12)
+      at next (tests/adminOrderRoutes.test.js:31:5)
+      at authenticate (tests/adminOrderRoutes.test.js:34:49)
+      at Layer.handleRequest (node_modules/router/lib/layer.js:152:17)
+      at trimPrefix (node_modules/router/index.js:342:13)
+      at node_modules/router/index.js:297:9
+      at processParams (node_modules/router/index.js:582:12)
+      at next (node_modules/router/index.js:291:5)
+      at Function.handle (node_modules/router/index.js:186:3)
+      at router (node_modules/router/index.js:60:12)
+      at Layer.handleRequest (node_modules/router/lib/layer.js:152:17)
+      at trimPrefix (node_modules/router/index.js:342:13)
+      at node_modules/router/index.js:297:9
+      at processParams (node_modules/router/index.js:582:12)
+      at next (node_modules/router/index.js:291:5)
+      at read (node_modules/body-parser/lib/read.js:59:5)
+      at jsonParser (node_modules/body-parser/lib/types/json.js:60:5)
+      at Layer.handleRequest (node_modules/router/lib/layer.js:152:17)
+      at trimPrefix (node_modules/router/index.js:342:13)
+      at node_modules/router/index.js:297:9
+      at processParams (node_modules/router/index.js:582:12)
+      at next (node_modules/router/index.js:291:5)
+      at Function.handle (node_modules/router/index.js:186:3)
+      at Function.handle (node_modules/express/lib/application.js:177:15)
+      at Server.app (node_modules/express/lib/express.js:38:9)
+
+Test Suites: 14 passed, 14 total
+Tests:       168 passed, 168 total
+Snapshots:   0 total
+Time:        9.41 s, estimated 10 s
+Ran all test suites.

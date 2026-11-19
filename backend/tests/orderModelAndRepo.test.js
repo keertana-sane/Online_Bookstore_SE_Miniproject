@@ -1,3 +1,5 @@
+const request = require('supertest');
+const express = require('express');
 const mongoose = require('mongoose');
 const { createOrderModel, ORDER_STATUSES } = require('../models/Order');
 const { createCartModel } = require('../models/Cart');
@@ -212,6 +214,27 @@ describe('module wiring on the app\'s mongoose instance', () => {
 
     expect(typeof router).toBe('function');
     expect(Object.keys(m.models).sort()).toEqual(['Book', 'Cart', 'Order']);
+  });
+
+  // Found by system testing: the admin router was mounted at /api/v1/orders instead of /api/v1/admin/orders.
+  test('mounts the administrator order routes under /admin and the customer routes under /orders', async () => {
+    const m = new mongoose.Mongoose();
+    m.model('Book', new m.Schema({ title: String }));
+    const router = createCartCheckoutRouter({
+      authenticate: (req, res, next) => res.status(401).json({ reached: 'customer-auth' }),
+      authenticateAdmin: (req, res, next) => res.status(418).json({ reached: 'admin-auth' }),
+      mongooseImpl: m
+    });
+    const app = express();
+    app.use('/api/v1', router);
+
+    const admin = await request(app).get('/api/v1/admin/orders');
+    expect(admin.status).toBe(418); // reached the administrator check, not a 404
+    const adminStatus = await request(app).patch('/api/v1/admin/orders/aaaaaaaaaaaaaaaaaaaaaaaa/status');
+    expect(adminStatus.status).toBe(418);
+    const customer = await request(app).get('/api/v1/orders');
+    expect(customer.status).toBe(401);
+    expect(customer.body.reached).toBe('customer-auth');
   });
 
   test('rebuilds the Book model if the app has not registered one', () => {

@@ -260,7 +260,15 @@ app.get("/api/books/:id", async (req, res, next) => {
 });
 
 // Add a new book.
-app.post("/api/books", async (req, res, next) => {
+// Book create, edit, restock and disable are for ADMIN_STAFF only (SEC-002). The real
+// authenticate + role check is created when the server starts (see startServer), because it
+// needs the database connection. Until then the guard refuses every request, so these routes
+// can never be reached without a login.
+let requireAdminForBooks = (req, res, next) =>
+  next(new AppError(401, "UNAUTHORIZED", "Login required"));
+const adminBookGuard = (req, res, next) => requireAdminForBooks(req, res, next);
+
+app.post("/api/books", adminBookGuard, async (req, res, next) => {
   try {
     const { title, author, price, category, stock } = req.body || {};
     const cleanTitle = validateText(title, "title", INPUT_LIMITS.title);
@@ -305,7 +313,7 @@ app.post("/api/books", async (req, res, next) => {
 });
 
 // Edit book details.
-app.put("/api/books/:id", async (req, res, next) => {
+app.put("/api/books/:id", adminBookGuard, async (req, res, next) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) {
       throw new AppError(400, "BAD_REQUEST", "Invalid book ID.");
@@ -357,7 +365,7 @@ app.put("/api/books/:id", async (req, res, next) => {
 });
 
 // Update stock.
-app.patch("/api/books/:id/stock", async (req, res, next) => {
+app.patch("/api/books/:id/stock", adminBookGuard, async (req, res, next) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) {
       throw new AppError(400, "BAD_REQUEST", "Invalid book ID.");
@@ -396,7 +404,7 @@ app.patch("/api/books/:id/stock", async (req, res, next) => {
 });
 
 // Disable a book without deleting it.
-app.patch("/api/books/:id/disable", async (req, res, next) => {
+app.patch("/api/books/:id/disable", adminBookGuard, async (req, res, next) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) {
       throw new AppError(400, "BAD_REQUEST", "Invalid book ID.");
@@ -468,6 +476,7 @@ async function startServer() {
       authenticate(req, res, (err) =>
         err ? next(err) : requireAdmin(req, res, next)
       );
+    requireAdminForBooks = authenticateAdmin;
     app.use(
       "/api/v1",
       createCartCheckoutRouter({

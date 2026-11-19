@@ -55,7 +55,8 @@ function createCartCheckoutRouter({ authenticate, authenticateAdmin, mongooseImp
   router.use(createCartRouter({ cartService, authenticate }));
   router.use(createOrderRouter({ orderService, authenticate }));
   if (authenticateAdmin) {
-    router.use(createAdminOrderRouter({ orderService, authenticate: authenticateAdmin }));
+    // SAD API-15 / docs/ADMIN_MODULE.md: administrator order endpoints live under /admin.
+    router.use('/admin', createAdminOrderRouter({ orderService, authenticate: authenticateAdmin }));
   }
   return router;
 }

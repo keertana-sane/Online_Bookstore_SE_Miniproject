@@ -1,0 +1,32 @@
+PASS  TC-CART-01  Add an in-stock book to cart
+PASS  TC-CART-02  Reject out-of-stock book
+PASS  TC-CART-03  Cart requires authentication
+PASS  TC-CART-04  Update item quantity
+PASS  TC-CART-05  Quantity boundaries rejected
+PASS  TC-CART-06  Remove an item
+PASS  TC-CART-07  Cart total equals sum of price x quantity
+PASS  TC-CART-08  Empty cart total is zero
+PASS  TC-CART-09  Disabled book in the cart is flagged, left out of the total and blocks checkout (new in Part 3)
+PASS  TC-ORD-01  Reject checkout with empty cart
+PASS  TC-ORD-02  Reject checkout with missing shipping address
+PASS  TC-ORD-03  Shipping address length boundary
+PASS  TC-ORD-04  Successful checkout creates order
+PASS  TC-ORD-05  Order numbers are unique
+PASS  TC-ORD-08  Item sold out between cart and checkout
+PASS  TC-ORD-09  Concurrent checkout of last copy (10 rounds)
+PASS  TC-SEC-08  Book create, edit, restock and disable need a staff login (DEF-04 regression)
+PASS  TC-ORD-11  Staff accounts cannot use the cart or orders (new in Part 3)
+PASS  TC-ORD-12  Idempotency-Key must be a UUID (new in Part 3)
+PASS  TC-ORD-14  Tampered total in the request body is ignored (new in Part 3)
+PASS  TC-TRK-07  Customer with no orders sees empty history
+PASS  TC-TRK-08  Order history requires authentication
+PASS  TC-TRK-01  Order history lists own orders, newest first, with status (API)
+PASS  TC-TRK-02  View single order detail
+PASS  TC-TRK-03  Customer cannot read another customer's order
+PASS  TC-TRK-05  Customer cancels own PLACED order
+PASS  TC-TRK-06  Customer cannot cancel after PROCESSING
+PASS  TC-TRK-09  Cancelling twice restores stock once (new in Part 3)
+PASS  TC-TRK-10  Two cancels at the same moment restore stock once, 10 rounds (new in Part 3)
+PASS  TC-TRK-11  Status machine blocks invalid staff transitions (new in Part 3)
+
+success: 30/30 passed

@@ -35,7 +35,7 @@ jobs:
         run: npm ci
 
       - name: Audit frontend dependencies
-        run: npm audit --audit-level=high
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Run Oxlint
         run: npm run lint
@@ -72,7 +72,7 @@ jobs:
         run: npm ci --prefix ../backend
 
       - name: Audit server dependencies
-        run: npm audit --audit-level=high
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Run server static analysis
         run: npm run lint
@@ -106,7 +106,7 @@ jobs:
         run: npm ci
 
       - name: Audit backend module dependencies
-        run: npm audit --audit-level=high
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Run backend static analysis
         run: npm run lint

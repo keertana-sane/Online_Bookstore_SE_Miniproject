@@ -1,0 +1,3 @@
+PASS  TC-ORD-07  Retry after payment timeout does not duplicate order
+
+timeout-once: 1/1 passed

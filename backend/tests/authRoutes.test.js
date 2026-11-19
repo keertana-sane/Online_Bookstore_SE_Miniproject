@@ -94,7 +94,7 @@ describe('POST /api/v1/auth/register', () => {
     const app = createApp(createFakeUserRepo());
     const shortPassword = await request(app)
       .post('/api/v1/auth/register')
-      .send({ name: 'Pat Reader', email: 'pat@example.com', password: 'short7' })
+      .send({ name: 'Pat Reader', email: 'pat@example.com', password: 'Abcdef1' })
       .expect(422);
     expect(shortPassword.body.error.details[0].field).toBe('password');
 
