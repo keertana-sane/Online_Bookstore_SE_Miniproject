@@ -601,7 +601,8 @@ function App() {
 
         <section className="management-grid">
           {/* Add/edit book form */}
-          <section className="panel form-panel" id="book-form">
+          {isAdmin && (
+  <section className="panel form-panel" id="book-form">
             <div className="section-heading">
               <div>
                 <p className="eyebrow">CATALOG MANAGEMENT</p>
@@ -702,7 +703,7 @@ function App() {
               )}
             </form>
           </section>
-
+	)}
           {/* BK-12: Book details */}
           {(detailLoading || detailError || selectedBook) && (
             <section className="panel book-detail-panel">
@@ -901,7 +902,7 @@ function App() {
                           </p>
                         )}
 
-                        {book.active && (
+                        {isAdmin && book.active && (
                           <div className="book-actions">
                             <button
                               type="button"

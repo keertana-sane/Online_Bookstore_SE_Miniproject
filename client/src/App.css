@@ -292,7 +292,9 @@ button {
   align-items: start;
   gap: 22px;
 }
-
+.management-grid:not(:has(.form-panel)) {
+  grid-template-columns: 1fr;
+}
 .panel {
   padding: 25px;
   min-width: 0;
